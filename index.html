@@ -8,6 +8,9 @@
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Amiri&display=swap" rel="stylesheet">
   <link rel="manifest" href="manifest.json">
+  <script type="module" src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"></script>
+  <script type="module" src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js"></script>
+  <script type="module" src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js"></script>
   <script src="https://unpkg.com/@whereby.com/browser-sdk"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -33,7 +36,7 @@
       </div>
     </section>
 
-    <!-- Page des membres (publique) -->
+    <!-- Page des membres -->
     <section id="members" class="page">
       <h2>Liste des Membres</h2>
       <input type="text" id="members-search" placeholder="Rechercher un membre..." class="search-bar">
@@ -91,7 +94,8 @@
         <div id="personal-info"></div>
         <h3>Mes Cotisations</h3>
         <div id="personal-contributions"></div>
-        <button class="cta-button" onclick="payContribution()">Payer via Wave/Orange Money</button>
+        <button class="cta-button" onclick="payViaWave()">Payer via Wave</button>
+        <button class="cta-button" onclick="payViaOrangeMoney()">Payer via Orange Money</button>
         <h3>Suggestions</h3>
         <form id="suggestion-form">
           <textarea id="suggestion-text" placeholder="Votre suggestion..." required></textarea>
@@ -101,10 +105,10 @@
       </div>
     </section>
 
-    <!-- Espace secret -->
+    <!-- Espace Secret Général (Admin) -->
     <section id="secret" class="page">
       <button class="cta-button back-button" onclick="showPage('home')"><span class="material-icons">arrow_back</span> Retour</button>
-      <h2>Espace Secret</h2>
+      <h2>Espace Secret - Administration</h2>
       <div class="tabs">
         <button class="tab-button active" onclick="showTab('add-member')">Ajouter un Membre</button>
         <button class="tab-button" onclick="showTab('edit-member')">Modifier un Membre</button>
@@ -117,9 +121,6 @@
         <button class="tab-button" onclick="showTab('stats')">Statistiques</button>
         <button class="tab-button" onclick="showTab('video-calls')">Appels</button>
         <button class="tab-button" onclick="showTab('auto-messages')">Messages Automatisés</button>
-        <button class="tab-button" onclick="showTab('treasurer')">Cotisations (Trésorier)</button>
-        <button class="tab-button" onclick="showTab('president')">Fichiers Présidentiels</button>
-        <button class="tab-button" onclick="showTab('secretary')">Fichiers Secrétaire</button>
       </div>
       <div id="add-member" class="tab-content active">
         <h3>Ajouter un Membre</h3>
@@ -244,18 +245,35 @@
         <input type="text" id="auto-messages-search" placeholder="Rechercher un message automatisé..." class="search-bar">
         <div id="auto-messages-list"></div>
       </div>
-      <div id="treasurer" class="tab-content">
-        <h3>Gestion des Cotisations (Trésorier)</h3>
+    </section>
+
+    <!-- Espace Trésorier -->
+    <section id="treasurer" class="page">
+      <button class="cta-button back-button" onclick="showPage('home')"><span class="material-icons">arrow_back</span> Retour</button>
+      <h2>Espace Trésorier</h2>
+      <div class="tabs">
+        <button class="tab-button active" onclick="showTab('treasurer-contributions')">Cotisations</button>
+      </div>
+      <div id="treasurer-contributions" class="tab-content active">
+        <h3>Gestion des Cotisations</h3>
         <form id="add-contribution-form">
           <input type="text" id="contribution-name" placeholder="Nom (ex. : Journée de visite)" required>
           <input type="number" id="contribution-amount" placeholder="Montant (FCFA)" required>
           <button type="submit" class="cta-button">Ajouter Cotisation</button>
         </form>
-        <h3>Marquer les Paiements</h3>
         <input type="text" id="contributions-admin-search" placeholder="Rechercher une cotisation..." class="search-bar">
         <div id="contributions-admin-list"></div>
       </div>
-      <div id="president" class="tab-content">
+    </section>
+
+    <!-- Espace Président -->
+    <section id="president" class="page">
+      <button class="cta-button back-button" onclick="showPage('home')"><span class="material-icons">arrow_back</span> Retour</button>
+      <h2>Espace Président</h2>
+      <div class="tabs">
+        <button class="tab-button active" onclick="showTab('president-files')">Fichiers Présidentiels</button>
+      </div>
+      <div id="president-files" class="tab-content active">
         <h3>Fichiers Présidentiels</h3>
         <form id="add-president-file-form">
           <input type="text" id="president-file-category" placeholder="Catégorie" required>
@@ -265,7 +283,16 @@
         <input type="text" id="president-files-search" placeholder="Rechercher un fichier..." class="search-bar">
         <div id="president-files-list"></div>
       </div>
-      <div id="secretary" class="tab-content">
+    </section>
+
+    <!-- Espace Secrétaire -->
+    <section id="secretary" class="page">
+      <button class="cta-button back-button" onclick="showPage('home')"><span class="material-icons">arrow_back</span> Retour</button>
+      <h2>Espace Secrétaire</h2>
+      <div class="tabs">
+        <button class="tab-button active" onclick="showTab('secretary-files')">Fichiers Secrétaire</button>
+      </div>
+      <div id="secretary-files" class="tab-content active">
         <h3>Fichiers Secrétaire</h3>
         <form id="add-secretary-file-form">
           <input type="text" id="secretary-file-category" placeholder="Catégorie" required>
@@ -312,12 +339,15 @@
   <div class="chatbot-button">
     <span class="material-icons">chat</span>
   </div>
-  <div id="chatbot" class="chatbot-container" style="display: none;">
+  <div id="chatbot" class="chatbot-container">
     <div class="chatbot-header">
       <h3>Assistant ANSAR</h3>
       <span class="material-icons" onclick="toggleChatbot()">close</span>
     </div>
     <div id="chatbot-messages"></div>
+    <div id="chatbot-controls">
+      <button class="cta-button clear-history" onclick="clearChatHistory()"><span class="material-icons">delete</span> Effacer</button>
+    </div>
     <form id="chatbot-form">
       <input type="text" id="chatbot-input" placeholder="Posez une question...">
       <button type="submit" class="cta-button"><span class="material-icons">send</span></button>
@@ -328,6 +358,6 @@
     </div>
   </div>
   <script src="chatbotResponses.js"></script>
-  <script src="main.js"></script>
+  <script type="module" src="main.js"></script>
 </body>
 </html>

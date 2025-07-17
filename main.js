@@ -1,3 +1,7 @@
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+import { getDatabase, ref, set, get, onValue, remove, push } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js';
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js';
+
 const firebaseConfig = {
   apiKey: "AIzaSyB7-fXR59CqNMyYgZTDAdBNpMTE_GkcOlA",
   authDomain: "ansar-93d9e.firebaseapp.com",
@@ -8,54 +12,102 @@ const firebaseConfig = {
   measurementId: "G-N3LBBHM2N0"
 };
 
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const storage = getStorage(app);
+
+const presidentCode = '0000';
 let currentUser = null;
 let isChatOpen = false;
 let selectedCallMembers = [];
-let secretEntryTimeout;
+
+const defaultData = {
+  members: [
+    {
+      code: '001',
+      firstname: 'Mouhamed',
+      lastname: 'Niang',
+      age: 45,
+      dob: '01012000',
+      birthplace: 'Dakar',
+      photo: 'assets/images/default-photo.png',
+      email: 'mouhamed.niang@example.com',
+      activity: 'Président',
+      address: '123 Rue Principale, Dakar',
+      phone: '+221123456789',
+      residence: 'Dakar',
+      role: 'president',
+      status: 'actif',
+      contributions: { 'Mensuelle': { '2023': Array(12).fill(false), '2024': Array(12).fill(false), '2025': Array(12).fill(false) } }
+    }
+  ],
+  contributions: [{ name: 'Mensuelle', amount: 2000, years: ['2023', '2024', '2025'] }],
+  events: [{ name: 'Conférence Annuelle', description: 'Conférence 2025', image: 'assets/images/conference.jpg', datetime: '2025-08-17T15:00:00' }],
+  suggestions: [],
+  gallery: [],
+  messages: [],
+  autoMessages: [],
+  notes: [],
+  internalDocs: [],
+  presidentFiles: [],
+  secretaryFiles: [],
+  library: []
+};
+
+async function initDB() {
+  const collections = ['members', 'contributions', 'events', 'suggestions', 'gallery', 'messages', 'autoMessages', 'notes', 'internalDocs', 'presidentFiles', 'secretaryFiles', 'library'];
+  for (const collection of collections) {
+    const snapshot = await get(ref(db, collection));
+    if (!snapshot.exists()) {
+      await set(ref(db, collection), defaultData[collection]);
+    }
+    onValue(ref(db, collection), (snapshot) => {
+      const data = snapshot.val() || defaultData[collection];
+      updateUI(collection, data);
+    });
+  }
+}
+
+function updateUI(collection, data) {
+  switch (collection) {
+    case 'members': updateMembersList(); updateEditMembersList(); updateCallMembersList(); updateStats(); break;
+    case 'contributions': updateContributionsAdminList(); updatePersonalInfo(); updateStats(); break;
+    case 'events': updateEventsList(); updateEventsAdminList(); updateEventCountdowns(); break;
+    case 'suggestions': updateSuggestionsList(); break;
+    case 'gallery': updateGalleryContent(); updateGalleryAdminList(); break;
+    case 'messages': updateMessagesList(); updateMessagesAdminList(); updateMessagePopups(); break;
+    case 'autoMessages': updateAutoMessagesList(); break;
+    case 'notes': updateNotesList(); break;
+    case 'internalDocs': updateInternalDocsList(); break;
+    case 'presidentFiles': updatePresidentFilesList(); break;
+    case 'secretaryFiles': updateSecretaryFilesList(); break;
+    case 'library': updateLibraryContent(); break;
+  }
+}
 
 function showPage(pageId) {
   document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-  document.querySelector(`#${pageId}`).classList.add('active');
-  document.querySelector(`a[onclick="showPage('${pageId}')"]`).classList.add('active');
-  if (pageId === 'members') updateMembersList();
-  if (pageId === 'events') updateEventsList();
-  if (pageId === 'gallery') updateGalleryContent();
-  if (pageId === 'messages') updateMessagesList();
-  if (pageId === 'coran') updateCoranContent();
-  if (pageId === 'personal') {
-    document.querySelector('#personal-login').style.display = currentUser && currentUser.role !== 'admin' ? 'none' : 'block';
-    document.querySelector('#personal-content').style.display = currentUser && currentUser.role !== 'admin' ? 'block' : 'none';
-    if (currentUser && currentUser.role !== 'admin') updatePersonalInfo();
+  const pageElement = document.querySelector(`#${pageId}`);
+  if (pageElement) {
+    pageElement.classList.add('active');
+    document.querySelector(`a[onclick="showPage('${pageId}')"]`)?.classList.add('active');
   }
-  if (pageId === 'library') updateLibraryContent();
-  if (pageId === 'home') updateMessagePopups();
-  if (pageId === 'secret') showTab('add-member');
-  if (pageId === 'treasurer-secret') showTab('treasurer-contributions');
-  if (pageId === 'president-secret') showTab('president-files');
-  if (pageId === 'secretary-secret') showTab('secretary-files');
+  if (pageId === 'personal' && currentUser && currentUser.role !== 'admin') {
+    document.querySelector('#personal-login').style.display = 'none';
+    document.querySelector('#personal-content').style.display = 'block';
+    updatePersonalInfo();
+  }
 }
 
 function showTab(tabId) {
   document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
   document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-  document.querySelector(`#${tabId}`).classList.add('active');
-  document.querySelector(`button[onclick="showTab('${tabId}')"]`).classList.add('active');
-  if (tabId === 'edit-member') updateEditMembersList();
-  if (tabId === 'gallery-admin') updateGalleryAdminList();
-  if (tabId === 'events-admin') updateEventsAdminList();
-  if (tabId === 'messages-admin') updateMessagesAdminList();
-  if (tabId === 'notes') updateNotesList();
-  if (tabId === 'internal-docs') updateInternalDocsList();
-  if (tabId === 'suggestions-admin') updateSuggestionsList();
-  if (tabId === 'stats') updateStats();
-  if (tabId === 'video-calls') initVideoCall();
-  if (tabId === 'auto-messages') updateAutoMessagesList();
-  if (tabId === 'treasurer-contributions') updateContributionsAdminList();
-  if (tabId === 'president-files') updatePresidentFilesList();
-  if (tabId === 'president-notes') updatePresidentNotesList();
-  if (tabId === 'secretary-files') updateSecretaryFilesList();
-  if (tabId === 'secretary-notes') updateSecretaryNotesList();
+  const tabElement = document.querySelector(`#${tabId}`);
+  if (tabElement) {
+    tabElement.classList.add('active');
+    document.querySelector(`button[onclick="showTab('${tabId}')"]`)?.classList.add('active');
+  }
 }
 
 function toggleTheme() {
@@ -63,10 +115,10 @@ function toggleTheme() {
 }
 
 function updateEventCountdowns() {
-  database.ref('events').once('value').then(snapshot => {
-    const events = snapshot.val() ? Object.values(snapshot.val()) : [];
+  get(ref(db, 'events')).then((snapshot) => {
+    const events = snapshot.val() || [];
     const countdowns = document.getElementById('event-countdowns');
-    countdowns.innerHTML = events.map(event => {
+    countdowns.innerHTML = Object.values(events).map(event => {
       const eventDate = new Date(event.datetime);
       const now = new Date();
       const diff = eventDate - now;
@@ -87,18 +139,13 @@ function updateEventCountdowns() {
 setInterval(updateEventCountdowns, 1000);
 setInterval(checkAutoMessages, 60000);
 
-document.querySelector('#settings-language').addEventListener('change', (e) => {
-  // Language change handled in settings
-});
+document.querySelector('#settings-language').addEventListener('change', (e) => {});
 
 function toggleChatbot() {
   isChatOpen = !isChatOpen;
   document.querySelector('#chatbot').style.display = isChatOpen ? 'block' : 'none';
   if (isChatOpen) {
     document.querySelector('#chatbot-messages').innerHTML = '<div class="chatbot-message received">Bienvenue ! Posez une question ou utilisez un mot-clé comme "association", "membre", "cotisation", etc.</div>';
-  } else {
-    clearTimeout(secretEntryTimeout);
-    document.querySelector('#secret-entry').style.display = 'none';
   }
 }
 
@@ -112,12 +159,6 @@ document.addEventListener('click', (e) => {
 
 document.querySelector('.chatbot-button').addEventListener('click', toggleChatbot);
 
-function clearChatHistory() {
-  document.querySelector('#chatbot-messages').innerHTML = '<div class="chatbot-message received">Historique effacé. Posez une question ou utilisez un mot-clé.</div>';
-  document.querySelector('#secret-entry').style.display = 'none';
-  clearTimeout(secretEntryTimeout);
-}
-
 document.querySelector('#chatbot-form').addEventListener('submit', (e) => {
   e.preventDefault();
   const input = document.querySelector('#chatbot-input');
@@ -128,7 +169,7 @@ document.querySelector('#chatbot-form').addEventListener('submit', (e) => {
   const secretCodes = ['ADMIN12301012000', '00000000', '11111111', '22222222'];
   if (secretCodes.includes(message)) {
     document.querySelector('#secret-entry').style.display = 'block';
-    secretEntryTimeout = setTimeout(() => {
+    setTimeout(() => {
       document.querySelector('#secret-entry').style.display = 'none';
     }, 30000);
   } else {
@@ -138,6 +179,10 @@ document.querySelector('#chatbot-form').addEventListener('submit', (e) => {
   input.value = '';
   messages.scrollTop = messages.scrollHeight;
 });
+
+function clearChatHistory() {
+  document.querySelector('#chatbot-messages').innerHTML = '<div class="chatbot-message received">Historique effacé. Posez une question !</div>';
+}
 
 function enterSecret() {
   const password = document.querySelector('#secret-password').value;
@@ -151,47 +196,47 @@ function enterSecret() {
     toggleChatbot();
   } else if (treasurerCodes.includes(password)) {
     currentUser = { code: 'TRESORIER', role: 'tresorier' };
-    showPage('treasurer-secret');
+    showPage('treasurer');
+    showTab('treasurer-contributions');
     toggleChatbot();
   } else if (presidentCodes.includes(password)) {
     currentUser = { code: 'PRESIDENT', role: 'president' };
-    showPage('president-secret');
+    showPage('president');
+    showTab('president-files');
     toggleChatbot();
   } else if (secretaryCodes.includes(password)) {
     currentUser = { code: 'SECRETAIRE', role: 'secretaire' };
-    showPage('secretary-secret');
+    showPage('secretary');
+    showTab('secretary-files');
     toggleChatbot();
   } else {
     document.querySelector('#chatbot-messages').innerHTML += '<div class="chatbot-message received">Mot de passe incorrect.</div>';
   }
 }
 
-document.querySelector('#personal-login-form').addEventListener('submit', (e) => {
+document.querySelector('#personal-login-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const code = document.querySelector('#personal-member-code').value;
   const password = document.querySelector('#personal-password').value;
   const errorMessage = document.querySelector('#personal-error-message');
-
   const dateRegex = /^(0[1-9]|[12][0-9]|3[01])(0[1-9]|1[012])(19|20)\d\d$/;
   if (!dateRegex.test(password)) {
     errorMessage.textContent = 'Mot de passe invalide (format : JJMMAAAA)';
     errorMessage.style.display = 'block';
     return;
   }
-
-  database.ref('members').orderByChild('code').equalTo(code).once('value').then(snapshot => {
-    const member = snapshot.val() ? Object.values(snapshot.val())[0] : null;
-    if (member && member.dob === password) {
-      currentUser = member;
-      document.querySelector('#personal-title').textContent = `Espace de ${member.firstname} ${member.lastname}`;
-      document.querySelector('#personal-login').style.display = 'none';
-      document.querySelector('#personal-content').style.display = 'block';
-      updatePersonalInfo();
-    } else {
-      errorMessage.textContent = 'Numéro de membre ou mot de passe incorrect';
-      errorMessage.style.display = 'block';
-    }
-  });
+  const snapshot = await get(ref(db, `members/${code}`));
+  const member = snapshot.val();
+  if (member && member.dob === password) {
+    currentUser = { ...member, code };
+    document.querySelector('#personal-title').textContent = `Espace de ${member.firstname} ${member.lastname}`;
+    document.querySelector('#personal-login').style.display = 'none';
+    document.querySelector('#personal-content').style.display = 'block';
+    updatePersonalInfo();
+  } else {
+    errorMessage.textContent = 'Numéro de membre ou mot de passe incorrect';
+    errorMessage.style.display = 'block';
+  }
 });
 
 function logoutPersonal() {
@@ -201,120 +246,124 @@ function logoutPersonal() {
   showPage('home');
 }
 
-document.querySelector('#add-member-form').addEventListener('submit', (e) => {
+document.querySelector('#add-member-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!currentUser || currentUser.role !== 'admin') return;
-  database.ref('members').once('value').then(snapshot => {
-    const members = snapshot.val() ? Object.values(snapshot.val()) : [];
-    const member = {
-      code: `${(members.length + 1).toString().padStart(3, '0')}`,
-      firstname: document.querySelector('#new-member-firstname').value,
-      lastname: document.querySelector('#new-member-lastname').value,
-      age: parseInt(document.querySelector('#new-member-age').value) || null,
-      dob: document.querySelector('#new-member-dob').value || null,
-      birthplace: document.querySelector('#new-member-birthplace').value || null,
-      photo: document.querySelector('#new-member-photo').files[0] ? URL.createObjectURL(document.querySelector('#new-member-photo').files[0]) : 'assets/images/default-photo.png',
-      email: document.querySelector('#new-member-email').value || null,
-      activity: document.querySelector('#new-member-activity').value || null,
-      address: document.querySelector('#new-member-address').value || null,
-      phone: document.querySelector('#new-member-phone').value || null,
-      residence: document.querySelector('#new-member-residence').value || null,
-      role: document.querySelector('#new-member-role').value || 'membre',
-      status: document.querySelector('#new-member-status').value || 'actif',
-      contributions: { 'Mensuelle': { '2023': Array(12).fill(false), '2024': Array(12).fill(false), '2025': Array(12).fill(false) } }
-    };
-    database.ref('members').push(member);
-    document.querySelector('#add-member-form').reset();
-  });
+  const snapshot = await get(ref(db, 'members'));
+  const members = snapshot.val() || {};
+  const newCode = `${(Object.keys(members).length + 1).toString().padStart(3, '0')}`;
+  const member = {
+    code: newCode,
+    firstname: document.querySelector('#new-member-firstname').value,
+    lastname: document.querySelector('#new-member-lastname').value,
+    age: parseInt(document.querySelector('#new-member-age').value) || null,
+    dob: document.querySelector('#new-member-dob').value || null,
+    birthplace: document.querySelector('#new-member-birthplace').value || null,
+    photo: 'assets/images/default-photo.png',
+    email: document.querySelector('#new-member-email').value || null,
+    activity: document.querySelector('#new-member-activity').value || null,
+    address: document.querySelector('#new-member-address').value || null,
+    phone: document.querySelector('#new-member-phone').value || null,
+    residence: document.querySelector('#new-member-residence').value || null,
+    role: document.querySelector('#new-member-role').value || 'membre',
+    status: document.querySelector('#new-member-status').value || 'actif',
+    contributions: { 'Mensuelle': { '2023': Array(12).fill(false), '2024': Array(12).fill(false), '2025': Array(12).fill(false) } }
+  };
+  const file = document.querySelector('#new-member-photo').files[0];
+  if (file) {
+    const fileRef = storageRef(storage, `members/${newCode}/${file.name}`);
+    await uploadBytes(fileRef, file);
+    member.photo = await getDownloadURL(fileRef);
+  }
+  await set(ref(db, `members/${newCode}`), member);
+  document.querySelector('#add-member-form').reset();
 });
 
-document.querySelector('#delete-member-form').addEventListener('submit', (e) => {
+document.querySelector('#delete-member-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const code = document.querySelector('#delete-member-code').value;
-  if (code !== '0000') {
+  if (code !== presidentCode) {
     alert('Code président incorrect');
     return;
   }
-  const memberId = document.querySelector('#delete-member-form').dataset.memberId;
-  database.ref(`members/${memberId}`).remove();
+  const memberCode = document.querySelector('#delete-member-form').dataset.memberCode;
+  await remove(ref(db, `members/${memberCode}`));
   document.querySelector('#delete-member-form').style.display = 'none';
 });
 
-document.querySelector('#add-contribution-form').addEventListener('submit', (e) => {
+document.querySelector('#add-contribution-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!currentUser || currentUser.role !== 'tresorier') return;
   const name = document.querySelector('#contribution-name').value;
   const amount = parseInt(document.querySelector('#contribution-amount').value);
   const currentYear = new Date().getFullYear().toString();
   const contribution = { name, amount, years: [currentYear] };
-  database.ref('contributions').push(contribution);
-  database.ref('members').once('value').then(snapshot => {
-    const members = snapshot.val() ? Object.entries(snapshot.val()).map(([id, m]) => ({ id, ...m })) : [];
-    members.forEach((member, index) => {
-      if (!member.contributions[name]) {
-        member.contributions[name] = { [currentYear]: Array(12).fill(false) };
-        database.ref(`members/${Object.keys(snapshot.val())[index]}`).update({ contributions: member.contributions });
-      }
-    });
-  });
+  await push(ref(db, 'contributions'), contribution);
+  const snapshot = await get(ref(db, 'members'));
+  const members = snapshot.val() || {};
+  for (const [code, member] of Object.entries(members)) {
+    if (!member.contributions[name]) {
+      member.contributions[name] = { [currentYear]: Array(12).fill(false) };
+      await set(ref(db, `members/${code}`), member);
+    }
+  }
   document.querySelector('#add-contribution-form').reset();
 });
 
-document.querySelector('#suggestion-form').addEventListener('submit', (e) => {
+document.querySelector('#suggestion-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!currentUser) return;
   const text = document.querySelector('#suggestion-text').value;
-  database.ref('suggestions').push({ member: `${currentUser.firstname} ${currentUser.lastname}`, text, timestamp: new Date().toISOString() });
+  await push(ref(db, 'suggestions'), { member: `${currentUser.firstname} ${currentUser.lastname}`, text });
   document.querySelector('#suggestion-form').reset();
 });
 
-document.querySelector('#add-gallery-form').addEventListener('submit', (e) => {
+document.querySelector('#add-gallery-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!currentUser || currentUser.role !== 'admin') return;
   const file = document.querySelector('#gallery-file').files[0];
   if (file) {
-    const reader = new FileReader();
-    reader.onload = () => {
-      database.ref('gallery').push({ type: file.type.startsWith('image') ? 'image' : 'video', url: reader.result, name: file.name });
-    };
-    reader.readAsDataURL(file);
+    const fileRef = storageRef(storage, `gallery/${Date.now()}_${file.name}`);
+    await uploadBytes(fileRef, file);
+    const url = await getDownloadURL(fileRef);
+    await push(ref(db, 'gallery'), { type: file.type.startsWith('image') ? 'image' : 'video', url, name: file.name });
     document.querySelector('#add-gallery-form').reset();
   }
 });
 
-document.querySelector('#add-event-form').addEventListener('submit', (e) => {
+document.querySelector('#add-event-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!currentUser || currentUser.role !== 'admin') return;
-  const file = document.querySelector('#event-file').files[0];
   const event = {
     name: document.querySelector('#event-name').value,
     description: document.querySelector('#event-description').value,
-    datetime: new Date(`${document.querySelector('#event-date').value}T${document.querySelector('#event-time').value}`).toISOString()
+    datetime: new Date(`${document.querySelector('#event-date').value}T${document.querySelector('#event-time').value}`).toISOString(),
+    image: ''
   };
+  const file = document.querySelector('#event-file').files[0];
   if (file) {
-    const reader = new FileReader();
-    reader.onload = () => {
-      event.image = reader.result;
-      database.ref('events').push(event);
-    };
-    reader.readAsDataURL(file);
-  } else {
-    database.ref('events').push(event);
+    const fileRef = storageRef(storage, `events/${Date.now()}_${file.name}`);
+    await uploadBytes(fileRef, file);
+    event.image = await getDownloadURL(fileRef);
   }
+  await push(ref(db, 'events'), event);
   document.querySelector('#add-event-form').reset();
 });
 
-document.querySelector('#add-message-form').addEventListener('submit', (e) => {
+document.querySelector('#add-message-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!currentUser || currentUser.role !== 'admin') return;
-  const title = document.querySelector('#message-title').value;
-  const text = document.querySelector('#message-text').value;
-  database.ref('messages').push({ title, text, date: new Date().toISOString() });
+  const message = {
+    title: document.querySelector('#message-title').value,
+    text: document.querySelector('#message-text').value,
+    date: new Date().toISOString()
+  };
+  await push(ref(db, 'messages'), message);
   document.querySelector('#add-message-form').reset();
-  sendNotification('Nouveau message', `${title}: ${text}`);
+  sendNotification('Nouveau message', `${message.title}: ${message.text}`);
 });
 
-document.querySelector('#add-auto-message-form').addEventListener('submit', (e) => {
+document.querySelector('#add-auto-message-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!currentUser || currentUser.role !== 'admin') return;
   const autoMessage = {
@@ -322,77 +371,66 @@ document.querySelector('#add-auto-message-form').addEventListener('submit', (e) 
     text: document.querySelector('#auto-message-text').value,
     datetime: new Date(`${document.querySelector('#auto-message-date').value}T${document.querySelector('#auto-message-time').value}`).toISOString()
   };
-  database.ref('autoMessages').push(autoMessage);
+  await push(ref(db, 'autoMessages'), autoMessage);
   document.querySelector('#add-auto-message-form').reset();
 });
 
-document.querySelector('#add-note-form').addEventListener('submit', (e) => {
+document.querySelector('#add-note-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!currentUser || currentUser.role !== 'admin') return;
   const note = {
     theme: document.querySelector('#note-theme').value,
     text: document.querySelector('#note-text').value
   };
-  database.ref('notes').push(note);
+  await push(ref(db, 'notes'), note);
   document.querySelector('#add-note-form').reset();
 });
 
-document.querySelector('#add-president-file-form').addEventListener('submit', (e) => {
+document.querySelector('#add-internal-doc-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!currentUser || currentUser.role !== 'admin') return;
+  const file = document.querySelector('#internal-doc').files[0];
+  if (file) {
+    const fileRef = storageRef(storage, `internalDocs/${Date.now()}_${file.name}`);
+    await uploadBytes(fileRef, file);
+    const url = await getDownloadURL(fileRef);
+    await push(ref(db, 'internalDocs'), { name: file.name, url, category: document.querySelector('#internal-doc-category').value });
+    document.querySelector('#add-internal-doc-form').reset();
+  }
+});
+
+document.querySelector('#add-president-file-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!currentUser || currentUser.role !== 'president') return;
   const file = document.querySelector('#president-file').files[0];
   if (file) {
-    const reader = new FileReader();
-    reader.onload = () => {
-      database.ref('presidentFiles').push({ name: file.name, url: reader.result, category: document.querySelector('#president-file-category').value });
-    };
-    reader.readAsDataURL(file);
+    const fileRef = storageRef(storage, `presidentFiles/${Date.now()}_${file.name}`);
+    await uploadBytes(fileRef, file);
+    const url = await getDownloadURL(fileRef);
+    await push(ref(db, 'presidentFiles'), { name: file.name, url, category: document.querySelector('#president-file-category').value });
     document.querySelector('#add-president-file-form').reset();
   }
 });
 
-document.querySelector('#add-president-note-form').addEventListener('submit', (e) => {
-  e.preventDefault();
-  if (!currentUser || currentUser.role !== 'president') return;
-  const note = {
-    theme: document.querySelector('#president-note-theme').value,
-    text: document.querySelector('#president-note-text').value
-  };
-  database.ref('presidentNotes').push(note);
-  document.querySelector('#add-president-note-form').reset();
-});
-
-document.querySelector('#add-secretary-file-form').addEventListener('submit', (e) => {
+document.querySelector('#add-secretary-file-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!currentUser || currentUser.role !== 'secretaire') return;
   const file = document.querySelector('#secretary-file').files[0];
   if (file) {
-    const reader = new FileReader();
-    reader.onload = () => {
-      database.ref('secretaryFiles').push({ name: file.name, url: reader.result, category: document.querySelector('#secretary-file-category').value });
-    };
-    reader.readAsDataURL(file);
+    const fileRef = storageRef(storage, `secretaryFiles/${Date.now()}_${file.name}`);
+    await uploadBytes(fileRef, file);
+    const url = await getDownloadURL(fileRef);
+    await push(ref(db, 'secretaryFiles'), { name: file.name, url, category: document.querySelector('#secretary-file-category').value });
     document.querySelector('#add-secretary-file-form').reset();
   }
 });
 
-document.querySelector('#add-secretary-note-form').addEventListener('submit', (e) => {
-  e.preventDefault();
-  if (!currentUser || currentUser.role !== 'secretaire') return;
-  const note = {
-    theme: document.querySelector('#secretary-note-theme').value,
-    text: document.querySelector('#secretary-note-text').value
-  };
-  database.ref('secretaryNotes').push(note);
-  document.querySelector('#add-secretary-note-form').reset();
-});
-
 function updateMembersList() {
   const search = document.querySelector('#members-search').value.toLowerCase();
-  database.ref('members').on('value', snapshot => {
-    const members = snapshot.val() ? Object.entries(snapshot.val()).map(([id, m]) => ({ id, ...m })) : [];
-    const list = document.querySelector('#members-list');
-    list.innerHTML = members
+  const list = document.querySelector('#members-list');
+  get(ref(db, 'members')).then((snapshot) => {
+    const members = snapshot.val() || {};
+    list.innerHTML = Object.values(members)
       .filter(m => `${m.firstname} ${m.lastname}`.toLowerCase().includes(search) || m.code.toLowerCase().includes(search))
       .map(m => `
         <div class="member-card">
@@ -406,62 +444,71 @@ function updateMembersList() {
 function updateContributionsAdminList() {
   if (!currentUser || currentUser.role !== 'tresorier') return;
   const search = document.querySelector('#contributions-admin-search').value.toLowerCase();
-  database.ref('contributions').on('value', snapshot => {
-    const contributions = snapshot.val() ? Object.values(snapshot.val()) : [];
-    database.ref('members').on('value', membersSnapshot => {
-      const members = membersSnapshot.val() ? Object.entries(membersSnapshot.val()).map(([id, m]) => ({ id, ...m })) : [];
-      const list = document.querySelector('#contributions-admin-list');
-      list.innerHTML = contributions
-        .filter(c => c.name.toLowerCase().includes(search))
-        .map(c => `
-          <div class="contribution-card">
-            <h4>${c.name} (${c.amount} FCFA)</h4>
-            ${members.map(m => `
-              <div>
-                <p>${m.firstname} ${m.lastname}</p>
-                ${c.years.map(year => `
-                  <h5>${year}</h5>
-                  ${['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'].map((month, i) => `
-                    <input type="checkbox" ${m.contributions[c.name][year][i] ? 'checked' : ''} onchange="updateMonthlyPayment('${m.id}', '${c.name}', '${year}', ${i}, this.checked)">
-                    <label>${month}</label>
-                  `).join('')}
-                  <p>Payé: ${m.contributions[c.name][year].map((p, i) => p ? ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'][i] : '').filter(Boolean).join(', ')}</p>
-                  <p>Non payé: ${m.contributions[c.name][year].map((p, i) => !p ? ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'][i] : '').filter(Boolean).join(', ')}</p>
+  const list = document.querySelector('#contributions-admin-list');
+  get(ref(db, 'contributions')).then(async (contribSnapshot) => {
+    const contributions = contribSnapshot.val() || {};
+    const membersSnapshot = await get(ref(db, 'members'));
+    const members = membersSnapshot.val() || {};
+    list.innerHTML = Object.values(contributions)
+      .filter(c => c.name.toLowerCase().includes(search))
+      .map(c => `
+        <div class="contribution-card">
+          <h4>${c.name} (${c.amount} FCFA)</h4>
+          ${Object.values(members).map(m => `
+            <div>
+              <p>${m.firstname} ${m.lastname}</p>
+              ${c.years.map(year => `
+                <h5>${year}</h5>
+                ${['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'].map((month, i) => `
+                  <input type="checkbox" ${m.contributions[c.name]?.[year]?.[i] ? 'checked' : ''} onchange="updateMonthlyPayment('${m.code}', '${c.name}', '${year}', ${i}, this.checked)">
+                  <label>${month}</label>
                 `).join('')}
-              </div>
-            `).join('')}
-          </div>
-        `).join('');
-    });
-  });
-}
-
-function updateMonthlyPayment(memberId, contributionName, year, monthIndex, paid) {
-  if (!currentUser || currentUser.role !== 'tresorier') return;
-  database.ref(`members/${memberId}/contributions/${contributionName}/${year}/${monthIndex}`).set(paid);
-  sendNotification('Mise à jour cotisation', `Cotisation ${contributionName} pour ${year}, ${['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'][monthIndex]} marquée comme ${paid ? 'payée' : 'non payée'}.`);
-}
-
-function updateEditMembersList() {
-  const search = document.querySelector('#edit-member-search').value.toLowerCase();
-  database.ref('members').on('value', snapshot => {
-    const members = snapshot.val() ? Object.entries(snapshot.val()).map(([id, m]) => ({ id, ...m })) : [];
-    const list = document.querySelector('#edit-members-list');
-    list.innerHTML = members
-      .filter(m => `${m.firstname} ${m.lastname}`.toLowerCase().includes(search) || m.code.toLowerCase().includes(search))
-      .map(m => `
-        <div class="member-card">
-          <p><strong>Prénom :</strong> ${m.firstname}</p>
-          <p><strong>Nom :</strong> ${m.lastname}</p>
-          <button class="cta-button" onclick="editMember('${m.id}')">Modifier</button>
-          <button class="cta-button" onclick="deleteMember('${m.id}')">Supprimer</button>
+                <p>Payé: ${m.contributions[c.name]?.[year]?.map((p, i) => p ? ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'][i] : '').filter(Boolean).join(', ') || ''}</p>
+                <p>Non payé: ${m.contributions[c.name]?.[year]?.map((p, i) => !p ? ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'][i] : '').filter(Boolean).join(', ') || ''}</p>
+              `).join('')}
+            </div>
+          `).join('')}
         </div>
       `).join('');
   });
 }
 
-function editMember(id) {
-  database.ref(`members/${id}`).once('value').then(snapshot => {
+async function updateMonthlyPayment(memberCode, contributionName, year, monthIndex, paid) {
+  if (!currentUser || currentUser.role !== 'tresorier') return;
+  const memberRef = ref(db, `members/${memberCode}`);
+  const snapshot = await get(memberRef);
+  const member = snapshot.val();
+  if (!member.contributions[contributionName]) {
+    member.contributions[contributionName] = {};
+  }
+  if (!member.contributions[contributionName][year]) {
+    member.contributions[contributionName][year] = Array(12).fill(false);
+  }
+  member.contributions[contributionName][year][monthIndex] = paid;
+  await set(memberRef, member);
+  sendNotification('Mise à jour cotisation', `Cotisation ${contributionName} pour ${member.firstname} ${member.lastname} (${year}, ${['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'][monthIndex]}) marquée comme ${paid ? 'payée' : 'non payée'}.`);
+}
+
+function updateEditMembersList() {
+  const search = document.querySelector('#edit-member-search').value.toLowerCase();
+  const list = document.querySelector('#edit-members-list');
+  get(ref(db, 'members')).then((snapshot) => {
+    const members = snapshot.val() || {};
+    list.innerHTML = Object.values(members)
+      .filter(m => `${m.firstname} ${m.lastname}`.toLowerCase().includes(search) || m.code.toLowerCase().includes(search))
+      .map(m => `
+        <div class="member-card">
+          <p><strong>Prénom :</strong> ${m.firstname}</p>
+          <p><strong>Nom :</strong> ${m.lastname}</p>
+          <button class="cta-button" onclick="editMember('${m.code}')">Modifier</button>
+          <button class="cta-button" onclick="deleteMember('${m.code}')">Supprimer</button>
+        </div>
+      `).join('');
+  });
+}
+
+function editMember(code) {
+  get(ref(db, `members/${code}`)).then((snapshot) => {
     const member = snapshot.val();
     document.querySelector('#new-member-firstname').value = member.firstname;
     document.querySelector('#new-member-lastname').value = member.lastname;
@@ -479,18 +526,18 @@ function editMember(id) {
   });
 }
 
-function deleteMember(id) {
+function deleteMember(code) {
   if (!currentUser || currentUser.role !== 'admin') return;
-  document.querySelector('#delete-member-form').dataset.memberId = id;
+  document.querySelector('#delete-member-form').dataset.memberCode = code;
   document.querySelector('#delete-member-form').style.display = 'block';
 }
 
 function updateEventsList() {
   const search = document.querySelector('#events-search').value.toLowerCase();
-  database.ref('events').on('value', snapshot => {
-    const events = snapshot.val() ? Object.entries(snapshot.val()).map(([id, e]) => ({ id, ...e })) : [];
-    const list = document.querySelector('#events-list');
-    list.innerHTML = events
+  const list = document.querySelector('#events-list');
+  get(ref(db, 'events')).then((snapshot) => {
+    const events = snapshot.val() || {};
+    list.innerHTML = Object.values(events)
       .filter(e => e.name.toLowerCase().includes(search) || e.description.toLowerCase().includes(search))
       .map(e => `
         <div class="event-card">
@@ -505,33 +552,33 @@ function updateEventsList() {
 
 function updateEventsAdminList() {
   const search = document.querySelector('#events-admin-search').value.toLowerCase();
-  database.ref('events').on('value', snapshot => {
-    const events = snapshot.val() ? Object.entries(snapshot.val()).map(([id, e]) => ({ id, ...e })) : [];
-    const list = document.querySelector('#events-admin-list');
-    list.innerHTML = events
-      .filter(e => e.name.toLowerCase().includes(search) || e.description.toLowerCase().includes(search))
-      .map(e => `
+  const list = document.querySelector('#events-admin-list');
+  get(ref(db, 'events')).then((snapshot) => {
+    const events = snapshot.val() || {};
+    list.innerHTML = Object.entries(events)
+      .filter(([_, e]) => e.name.toLowerCase().includes(search) || e.description.toLowerCase().includes(search))
+      .map(([key, e]) => `
         <div class="event-card">
           <h4>${e.name}</h4>
           <p>${e.description}</p>
           <p>Date: ${new Date(e.datetime).toLocaleString()}</p>
           ${e.image ? `<img src="${e.image}" alt="${e.name}" style="max-width: 100%; border-radius: 10px;">` : ''}
-          <button class="cta-button" onclick="deleteEvent('${e.id}')">Supprimer</button>
+          <button class="cta-button" onclick="deleteEvent('${key}')">Supprimer</button>
         </div>
       `).join('');
   });
 }
 
-function deleteEvent(id) {
+async function deleteEvent(key) {
   if (!currentUser || currentUser.role !== 'admin') return;
-  database.ref(`events/${id}`).remove();
+  await remove(ref(db, `events/${key}`));
 }
 
 function updateGalleryContent() {
-  database.ref('gallery').on('value', snapshot => {
-    const gallery = snapshot.val() ? Object.values(snapshot.val()) : [];
-    const content = document.querySelector('#gallery-content');
-    content.innerHTML = gallery
+  const content = document.querySelector('#gallery-content');
+  get(ref(db, 'gallery')).then((snapshot) => {
+    const gallery = snapshot.val() || {};
+    content.innerHTML = Object.values(gallery)
       .map(g => `
         <div>
           ${g.type === 'image' ? `<img src="${g.url}" alt="Galerie">` : `<video src="${g.url}" controls></video>`}
@@ -542,30 +589,30 @@ function updateGalleryContent() {
 
 function updateGalleryAdminList() {
   const search = document.querySelector('#gallery-admin-search').value.toLowerCase();
-  database.ref('gallery').on('value', snapshot => {
-    const gallery = snapshot.val() ? Object.entries(snapshot.val()).map(([id, g]) => ({ id, ...g })) : [];
-    const list = document.querySelector('#gallery-admin-list');
-    list.innerHTML = gallery
-      .filter(g => g.name.toLowerCase().includes(search))
-      .map(g => `
+  const list = document.querySelector('#gallery-admin-list');
+  get(ref(db, 'gallery')).then((snapshot) => {
+    const gallery = snapshot.val() || {};
+    list.innerHTML = Object.entries(gallery)
+      .filter(([_, g]) => g.name.toLowerCase().includes(search))
+      .map(([key, g]) => `
         <div>
           ${g.type === 'image' ? `<img src="${g.url}" alt="Galerie" style="max-width: 100%; border-radius: 10px;">` : `<video src="${g.url}" controls style="max-width: 100%; border-radius: 10px;"></video>`}
-          <button class="cta-button" onclick="deleteGalleryItem('${g.id}')">Supprimer</button>
+          <button class="cta-button" onclick="deleteGalleryItem('${key}')">Supprimer</button>
         </div>
       `).join('');
   });
 }
 
-function deleteGalleryItem(id) {
+async function deleteGalleryItem(key) {
   if (!currentUser || currentUser.role !== 'admin') return;
-  database.ref(`gallery/${id}`).remove();
+  await remove(ref(db, `gallery/${key}`));
 }
 
 function updateMessagesList() {
-  database.ref('messages').on('value', snapshot => {
-    const messages = snapshot.val() ? Object.values(snapshot.val()) : [];
-    const list = document.querySelector('#messages-list');
-    list.innerHTML = messages
+  const list = document.querySelector('#messages-list');
+  get(ref(db, 'messages')).then((snapshot) => {
+    const messages = snapshot.val() || {};
+    list.innerHTML = Object.values(messages)
       .map(m => `
         <div class="message-card">
           <h4>${m.title}</h4>
@@ -578,426 +625,402 @@ function updateMessagesList() {
 
 function updateMessagesAdminList() {
   const search = document.querySelector('#messages-admin-search').value.toLowerCase();
-  database.ref('messages').on('value', snapshot => {
-    const messages = snapshot.val() ? Object.entries(snapshot.val()).map(([id, m]) => ({ id, ...m })) : [];
-    const list = document.querySelector('#messages-admin-list');
-    list.innerHTML = messages
-      .filter(m => m.title.toLowerCase().includes(search) || m.text.toLowerCase().includes(search))
-      .map(m => `
+  const list = document.querySelector('#messages-admin-list');
+  get(ref(db, 'messages')).then((snapshot) => {
+    const messages = snapshot.val() || {};
+    list.innerHTML = Object.entries(messages)
+      .filter(([_, m]) => m.title.toLowerCase().includes(search) || m.text.toLowerCase().includes(search))
+      .map(([key, m]) => `
         <div class="message-card">
           <h4>${m.title}</h4>
           <p>${m.text}</p>
           <p><small>${new Date(m.date).toLocaleString()}</small></p>
-          <button class="cta-button" onclick="deleteMessage('${m.id}')">Supprimer</button>
+          <button class="cta-button" onclick="deleteMessage('${key}')">Supprimer</button>
         </div>
       `).join('');
   });
 }
 
-function deleteMessage(id) {
+async function deleteMessage(key) {
   if (!currentUser || currentUser.role !== 'admin') return;
-  database.ref(`messages/${id}`).remove();
+  await remove(ref(db, `messages/${key}`));
 }
 
 function updateMessagePopups() {
-  database.ref('messages').on('value', snapshot => {
-    const messages = snapshot.val() ? Object.entries(snapshot.val()).map(([id, m]) => ({ id, ...m })) : [];
-    const popups = document.getElementById('message-popups');
-    popups.innerHTML = messages
-      .map(m => `
+  const popups = document.querySelector('#message-popups');
+  get(ref(db, 'messages')).then((snapshot) => {
+    const messages = snapshot.val() || {};
+    popups.innerHTML = Object.entries(messages)
+      .map(([key, m]) => `
         <div class="message-popup">
           <h4>${m.title}</h4>
           <p>${m.text}</p>
-          <button class="close-button" onclick="deleteMessage('${m.id}')"><span class="material-icons">close</span></button>
+          <button class="close-button" onclick="closeMessage('${key}')"><span class="material-icons">close</span></button>
         </div>
       `).join('');
   });
 }
 
+async function closeMessage(key) {
+  await remove(ref(db, `messages/${key}`));
+}
+
 function checkAutoMessages() {
-  const now = new Date();
-  database.ref('autoMessages').once('value').then(snapshot => {
-    const autoMessages = snapshot.val() ? Object.entries(snapshot.val()).map(([id, m]) => ({ id, ...m })) : [];
-    autoMessages.forEach(m => {
+  get(ref(db, 'autoMessages')).then(async (snapshot) => {
+    const autoMessages = snapshot.val() || {};
+    const now = new Date();
+    for (const [key, m] of Object.entries(autoMessages)) {
       if (new Date(m.datetime) <= now) {
-        database.ref('messages').push({ title: m.name, text: m.text, date: now.toISOString() });
-        database.ref(`autoMessages/${m.id}`).remove();
+        await push(ref(db, 'messages'), { title: m.name, text: m.text, date: now.toISOString() });
+        await remove(ref(db, `autoMessages/${key}`));
         sendNotification('Message automatisé', `${m.name}: ${m.text}`);
       }
-    });
+    }
   });
 }
 
 function updateAutoMessagesList() {
   const search = document.querySelector('#auto-messages-search').value.toLowerCase();
-  database.ref('autoMessages').on('value', snapshot => {
-    const autoMessages = snapshot.val() ? Object.entries(snapshot.val()).map(([id, m]) => ({ id, ...m })) : [];
-    const list = document.querySelector('#auto-messages-list');
-    list.innerHTML = autoMessages
-      .filter(m => m.name.toLowerCase().includes(search) || m.text.toLowerCase().includes(search))
-      .map(m => `
+  const list = document.querySelector('#auto-messages-list');
+  get(ref(db, 'autoMessages')).then((snapshot) => {
+    const autoMessages = snapshot.val() || {};
+    list.innerHTML = Object.entries(autoMessages)
+      .filter(([_, m]) => m.name.toLowerCase().includes(search) || m.text.toLowerCase().includes(search))
+      .map(([key, m]) => `
         <div class="message-card">
           <h4>${m.name}</h4>
           <p>${m.text}</p>
           <p>Date: ${new Date(m.datetime).toLocaleString()}</p>
-          <button class="cta-button" onclick="deleteAutoMessage('${m.id}')">Supprimer</button>
+          <button class="cta-button" onclick="deleteAutoMessage('${key}')">Supprimer</button>
         </div>
       `).join('');
   });
 }
 
-function deleteAutoMessage(id) {
+async function deleteAutoMessage(key) {
   if (!currentUser || currentUser.role !== 'admin') return;
-  database.ref(`autoMessages/${id}`).remove();
+  await remove(ref(db, `autoMessages/${key}`));
 }
 
 function updateNotesList() {
   const search = document.querySelector('#notes-search').value.toLowerCase();
-  database.ref('notes').on('value', snapshot => {
-    const notes = snapshot.val() ? Object.entries(snapshot.val()).map(([id, n]) => ({ id, ...n })) : [];
-    const list = document.querySelector('#notes-list');
-    list.innerHTML = notes
-      .filter(n => n.theme.toLowerCase().includes(search) || n.text.toLowerCase().includes(search))
-      .map(n => `
+  const list = document.querySelector('#notes-list');
+  get(ref(db, 'notes')).then((snapshot) => {
+    const notes = snapshot.val() || {};
+    list.innerHTML = Object.entries(notes)
+      .filter(([_, n]) => n.theme.toLowerCase().includes(search) || n.text.toLowerCase().includes(search))
+      .map(([key, n]) => `
         <div class="note-card">
           <p><strong>${n.theme}</strong>: ${n.text}</p>
-          <button class="cta-button" onclick="deleteNote('${n.id}')">Supprimer</button>
+          <button class="cta-button" onclick="deleteNote('${key}')">Supprimer</button>
         </div>
       `).join('');
   });
 }
 
-function deleteNote(id) {
+async function deleteNote(key) {
   if (!currentUser || currentUser.role !== 'admin') return;
-  database.ref(`notes/${id}`).remove();
-}
-
-function updatePresidentNotesList() {
-  const search = document.querySelector('#president-notes-search').value.toLowerCase();
-  database.ref('presidentNotes').on('value', snapshot => {
-    const notes = snapshot.val() ? Object.entries(snapshot.val()).map(([id, n]) => ({ id, ...n })) : [];
-    const list = document.querySelector('#president-notes-list');
-    list.innerHTML = notes
-      .filter(n => n.theme.toLowerCase().includes(search) || n.text.toLowerCase().includes(search))
-      .map(n => `
-        <div class="note-card">
-          <p><strong>${n.theme}</strong>: ${n.text}</p>
-          <button class="cta-button" onclick="deletePresidentNote('${n.id}')">Supprimer</button>
-        </div>
-      `).join('');
-  });
-}
-
-function deletePresidentNote(id) {
-  if (!currentUser || currentUser.role !== 'president') return;
-  database.ref(`presidentNotes/${id}`).remove();
-}
-
-function updateSecretaryNotesList() {
-  const search = document.querySelector('#secretary-notes-search').value.toLowerCase();
-  database.ref('secretaryNotes').on('value', snapshot => {
-    const notes = snapshot.val() ? Object.entries(snapshot.val()).map(([id, n]) => ({ id, ...n })) : [];
-    const list = document.querySelector('#secretary-notes-list');
-    list.innerHTML = notes
-      .filter(n => n.theme.toLowerCase().includes(search) || n.text.toLowerCase().includes(search))
-      .map(n => `
-        <div class="note-card">
-          <p><strong>${n.theme}</strong>: ${n.text}</p>
-          <button class="cta-button" onclick="deleteSecretaryNote('${n.id}')">Supprimer</button>
-        </div>
-      `).join('');
-  });
-}
-
-function deleteSecretaryNote(id) {
-  if (!currentUser || currentUser.role !== 'secretaire') return;
-  database.ref(`secretaryNotes/${id}`).remove();
+  await remove(ref(db, `notes/${key}`));
 }
 
 function updateInternalDocsList() {
   const search = document.querySelector('#internal-docs-search').value.toLowerCase();
-  database.ref('internalDocs').on('value', snapshot => {
-    const internalDocs = snapshot.val() ? Object.entries(snapshot.val()).map(([id, d]) => ({ id, ...d })) : [];
-    const list = document.querySelector('#internal-docs-list');
-    list.innerHTML = internalDocs
-      .filter(d => d.name.toLowerCase().includes(search) || d.category.toLowerCase().includes(search))
-      .map(d => `
+  const list = document.querySelector('#internal-docs-list');
+  get(ref(db, 'internalDocs')).then((snapshot) => {
+    const internalDocs = snapshot.val() || {};
+    list.innerHTML = Object.entries(internalDocs)
+      .filter(([_, d]) => d.name.toLowerCase().includes(search) || d.category.toLowerCase().includes(search))
+      .map(([key, d]) => `
         <div class="file-card">
           <p><strong>Catégorie :</strong> ${d.category}</p>
           <a href="${d.url}" download>${d.name}</a>
-          <button class="cta-button" onclick="deleteInternalDoc('${d.id}')">Supprimer</button>
+          <button class="cta-button" onclick="deleteInternalDoc('${key}')">Supprimer</button>
         </div>
       `).join('');
   });
 }
 
-function deleteInternalDoc(id) {
+async function deleteInternalDoc(key) {
   if (!currentUser || currentUser.role !== 'admin') return;
-  database.ref(`internalDocs/${id}`).remove();
+  await remove(ref(db, `internalDocs/${key}`));
 }
 
 function updatePresidentFilesList() {
   const search = document.querySelector('#president-files-search').value.toLowerCase();
-  database.ref('presidentFiles').on('value', snapshot => {
-    const presidentFiles = snapshot.val() ? Object.entries(snapshot.val()).map(([id, f]) => ({ id, ...f })) : [];
-    const list = document.querySelector('#president-files-list');
-    list.innerHTML = presidentFiles
-      .filter(f => f.name.toLowerCase().includes(search) || f.category.toLowerCase().includes(search))
-      .map(f => `
+  const list = document.querySelector('#president-files-list');
+  get(ref(db, 'presidentFiles')).then((snapshot) => {
+    const presidentFiles = snapshot.val() || {};
+    list.innerHTML = Object.entries(presidentFiles)
+      .filter(([_, f]) => f.name.toLowerCase().includes(search) || f.category.toLowerCase().includes(search))
+      .map(([key, f]) => `
         <div class="file-card">
           <p><strong>Catégorie :</strong> ${f.category}</p>
           <a href="${f.url}" download>${f.name}</a>
-          <button class="cta-button" onclick="deletePresidentFile('${f.id}')">Supprimer</button>
+          <button class="cta-button" onclick="deletePresidentFile('${key}')">Supprimer</button>
         </div>
       `).join('');
   });
 }
 
-function deletePresidentFile(id) {
+async function deletePresidentFile(key) {
   if (!currentUser || currentUser.role !== 'president') return;
-  database.ref(`presidentFiles/${id}`).remove();
+  await remove(ref(db, `presidentFiles/${key}`));
 }
 
 function updateSecretaryFilesList() {
   const search = document.querySelector('#secretary-files-search').value.toLowerCase();
-  database.ref('secretaryFiles').on('value', snapshot => {
-    const secretaryFiles = snapshot.val() ? Object.entries(snapshot.val()).map(([id, f]) => ({ id, ...f })) : [];
-    const list = document.querySelector('#secretary-files-list');
-    list.innerHTML = secretaryFiles
-      .filter(f => f.name.toLowerCase().includes(search) || f.category.toLowerCase().includes(search))
-      .map(f => `
+  const list = document.querySelector('#secretary-files-list');
+  get(ref(db, 'secretaryFiles')).then((snapshot) => {
+    const secretaryFiles = snapshot.val() || {};
+    list.innerHTML = Object.entries(secretaryFiles)
+      .filter(([_, f]) => f.name.toLowerCase().includes(search) || f.category.toLowerCase().includes(search))
+      .map(([key, f]) => `
         <div class="file-card">
           <p><strong>Catégorie :</strong> ${f.category}</p>
           <a href="${f.url}" download>${f.name}</a>
-          <button class="cta-button" onclick="deleteSecretaryFile('${f.id}')">Supprimer</button>
+          <button class="cta-button" onclick="deleteSecretaryFile('${key}')">Supprimer</button>
         </div>
       `).join('');
   });
 }
 
-function deleteSecretaryFile(id) {
+async function deleteSecretaryFile(key) {
   if (!currentUser || currentUser.role !== 'secretaire') return;
-  database.ref(`secretaryFiles/${id}`).remove();
+  await remove(ref(db, `secretaryFiles/${key}`));
 }
 
 function updateSuggestionsList() {
   const search = document.querySelector('#suggestions-search').value.toLowerCase();
-  database.ref('suggestions').on('value', snapshot => {
-    const suggestions = snapshot.val() ? Object.entries(snapshot.val()).map(([id, s]) => ({ id, ...s })) : [];
-    const list = document.querySelector('#suggestions-list');
-    list.innerHTML = suggestions
-      .filter(s => s.member.toLowerCase().includes(search) || s.text.toLowerCase().includes(search))
-      .map(s => `
+  const list = document.querySelector('#suggestions-list');
+  get(ref(db, 'suggestions')).then((snapshot) => {
+    const suggestions = snapshot.val() || {};
+    list.innerHTML = Object.entries(suggestions)
+      .filter(([_, s]) => s.member.toLowerCase().includes(search) || s.text.toLowerCase().includes(search))
+      .map(([key, s]) => `
         <div class="suggestion-card">
           <p><strong>${s.member}</strong>: ${s.text}</p>
-          <p><small>${new Date(s.timestamp).toLocaleString()}</small></p>
-          <button class="cta-button" onclick="deleteSuggestion('${s.id}')">Supprimer</button>
+          <button class="cta-button" onclick="deleteSuggestion('${key}')">Supprimer</button>
         </div>
       `).join('');
   });
 }
 
-function deleteSuggestion(id) {
+async function deleteSuggestion(key) {
   if (!currentUser || currentUser.role !== 'admin') return;
-  database.ref(`suggestions/${id}`).remove();
+  await remove(ref(db, `suggestions/${key}`));
+}
+
+function updateCoranContent() {
+  const search = document.querySelector('#coran-search').value.toLowerCase();
+  const content = document.querySelector('#coran-content');
+  content.innerHTML = Array(30).fill()
+    .map((_, i) => ({ juz: `Juz' ${i + 1}`, id: i + 1 }))
+    .filter(j => j.juz.toLowerCase().includes(search))
+    .map(j => `<p style="font-family: 'Amiri', serif; font-size: 1.2rem;">${j.juz}</p>`).join('');
+}
+
+function updateLibraryContent() {
+  const search = document.querySelector('#library-search').value.toLowerCase();
+  const content = document.querySelector('#library-content');
+  get(ref(db, 'library')).then((snapshot) => {
+    const library = snapshot.val() || {};
+    content.innerHTML = Object.values(library)
+      .filter(l => l.name.toLowerCase().includes(search) || l.category.toLowerCase().includes(search))
+      .map(l => `
+        <div class="file-card">
+          <p><strong>Catégorie :</strong> ${l.category}</p>
+          <a href="${l.url}" download>${l.name}</a>
+        </div>
+      `).join('');
+  });
 }
 
 function updatePersonalInfo() {
   if (!currentUser) return;
-  database.ref('contributions').on('value', snapshot => {
-    const contributions = snapshot.val() ? Object.values(snapshot.val()) : [];
-    const info = document.querySelector('#personal-info');
-    const contributionsDiv = document.querySelector('#personal-contributions');
+  const info = document.querySelector('#personal-info');
+  const contributions = document.querySelector('#personal-contributions');
+  get(ref(db, `members/${currentUser.code}`)).then((snapshot) => {
+    const member = snapshot.val();
+    if (!member) return;
     info.innerHTML = `
-      <p><strong>Prénom :</strong> ${currentUser.firstname}</p>
-      <p><strong>Nom :</strong> ${currentUser.lastname}</p>
-      <p><strong>Numéro :</strong> ${currentUser.code}</p>
-      ${currentUser.age ? `<p><strong>Âge :</strong> ${currentUser.age}</p>` : ''}
-      ${currentUser.dob ? `<p><strong>Date de naissance :</strong> ${currentUser.dob}</p>` : ''}
-      ${currentUser.birthplace ? `<p><strong>Lieu de naissance :</strong> ${currentUser.birthplace}</p>` : ''}
-      ${currentUser.email ? `<p><strong>Email :</strong> ${currentUser.email}</p>` : ''}
-      ${currentUser.activity ? `<p><strong>Activité :</strong> ${currentUser.activity}</p>` : ''}
-      ${currentUser.address ? `<p><strong>Adresse :</strong> ${currentUser.address}</p>` : ''}
-      ${currentUser.phone ? `<p><strong>Téléphone :</strong> ${currentUser.phone}</p>` : ''}
-      ${currentUser.residence ? `<p><strong>Résidence :</strong> ${currentUser.residence}</p>` : ''}
-      <p><strong>Statut :</strong> ${currentUser.status}</p>
+      <img src="${member.photo || 'assets/images/default-photo.png'}" alt="${member.firstname} ${member.lastname}" style="width: 100px; border-radius: 50%;">
+      <p><strong>Prénom :</strong> ${member.firstname}</p>
+      <p><strong>Nom :</strong> ${member.lastname}</p>
+      ${member.age ? `<p><strong>Âge :</strong> ${member.age}</p>` : ''}
+      ${member.dob ? `<p><strong>Date de naissance :</strong> ${member.dob}</p>` : ''}
+      ${member.birthplace ? `<p><strong>Lieu de naissance :</strong> ${member.birthplace}</p>` : ''}
+      ${member.email ? `<p><strong>Email :</strong> ${member.email}</p>` : ''}
+      ${member.activity ? `<p><strong>Activité :</strong> ${member.activity}</p>` : ''}
+      ${member.address ? `<p><strong>Adresse :</strong> ${member.address}</p>` : ''}
+      ${member.phone ? `<p><strong>Téléphone :</strong> ${member.phone}</p>` : ''}
+      ${member.residence ? `<p><strong>Résidence :</strong> ${member.residence}</p>` : ''}
+      <p><strong>Rôle :</strong> ${member.role}</p>
+      <p><strong>Statut :</strong> ${member.status}</p>
     `;
-    contributionsDiv.innerHTML = contributions.map(c => `
-      <div class="contribution-card">
-        <h4>${c.name} (${c.amount} FCFA)</h4>
-        ${c.years.map(year => `
-          <h5>${year}</h5>
-          ${['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'].map((month, i) => `
-            <p>${month}: ${currentUser.contributions[c.name][year][i] ? 'Payé' : 'Non payé'}</p>
+    get(ref(db, 'contributions')).then((contribSnapshot) => {
+      const contribs = contribSnapshot.val() || {};
+      contributions.innerHTML = Object.entries(member.contributions || {}).map(([name, years]) => `
+        <div class="contribution-card">
+          <p><strong>${name}</strong>: ${contribs[name]?.amount || 0} FCFA</p>
+          ${Object.entries(years).map(([year, months]) => `
+            <p><strong>${year}</strong></p>
+            <p>Payé: ${months.map((p, i) => p ? ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'][i] : '').filter(Boolean).join(', ')}</p>
+            <p>Non payé: ${months.map((p, i) => !p ? ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'][i] : '').filter(Boolean).join(', ')}</p>
           `).join('')}
-        `).join('')}
-      </div>
-    `).join('');
+        </div>
+      `).join('');
+    });
   });
 }
 
 function updateStats() {
-  if (!currentUser || currentUser.role !== 'admin') return;
-  database.ref('contributions').on('value', snapshot => {
-    const contributions = snapshot.val() ? Object.values(snapshot.val()) : [];
-    database.ref('members').on('value', membersSnapshot => {
-      const members = membersSnapshot.val() ? Object.values(membersSnapshot.val()) : [];
-      const totalAmount = contributions.reduce((sum, c) => {
-        return sum + members.reduce((mSum, m) => {
-          return mSum + c.years.reduce((ySum, y) => {
-            return ySum + m.contributions[c.name][y].filter(Boolean).length * c.amount;
+  get(ref(db, 'members')).then((memberSnapshot) => {
+    get(ref(db, 'contributions')).then((contribSnapshot) => {
+      const members = memberSnapshot.val() || {};
+      const contributions = contribSnapshot.val() || {};
+      const totalAmount = Object.values(members).reduce((sum, m) => {
+        return sum + Object.entries(m.contributions || {}).reduce((s, [name, years]) => {
+          return s + Object.values(years).reduce((t, months) => {
+            return t + (Array.isArray(months) ? months.filter(p => p).length * (contributions[name]?.amount || 0) : 0);
           }, 0);
         }, 0);
       }, 0);
-      const totalAmountChart = new Chart(document.getElementById('stats-total-amount'), {
+      const membersCount = Object.keys(members).length;
+      const activeMembers = Object.values(members).filter(m => m.status === 'actif').length;
+      const upToDateMembers = Object.values(members).filter(m => {
+        return Object.values(m.contributions || {}).every(years => {
+          return Object.values(years).every(months => Array.isArray(months) && months.every(p => p));
+        });
+      }).length;
+
+      new Chart(document.getElementById('stats-total-amount'), {
         type: 'bar',
         data: {
-          labels: ['Montant total'],
-          datasets: [{ label: 'FCFA', data: [totalAmount], backgroundColor: '#9b9c28' }]
+          labels: ['Somme totale'],
+          datasets: [{ label: 'Montant (FCFA)', data: [totalAmount], backgroundColor: '#9b9c28' }]
         }
       });
-      const membersChart = new Chart(document.getElementById('stats-members'), {
-        type: 'bar',
-        data: {
-          labels: ['Membres'],
-          datasets: [{ label: 'Nombre', data: [members.length], backgroundColor: '#9b9c28' }]
-        }
-      });
-      const statusChart = new Chart(document.getElementById('stats-status'), {
+
+      new Chart(document.getElementById('stats-members'), {
         type: 'pie',
         data: {
-          labels: ['Actif', 'Inactif', 'Liste noire'],
-          datasets: [{
-            data: [
-              members.filter(m => m.status === 'actif').length,
-              members.filter(m => m.status === 'inactif').length,
-              members.filter(m => m.status === 'liste-noire').length
-            ],
-            backgroundColor: ['#9b9c28', '#3a6241', '#ff0000']
-          }]
+          labels: ['Membres'],
+          datasets: [{ data: [membersCount], backgroundColor: ['#3a6241'] }]
         }
       });
-      const contributionsChart = new Chart(document.getElementById('stats-contributions'), {
+
+      new Chart(document.getElementById('stats-status'), {
+        type: 'pie',
+        data: {
+          labels: ['Actifs', 'Inactifs', 'Liste noire'],
+          datasets: [{ data: [activeMembers, membersCount - activeMembers - Object.values(members).filter(m => m.status === 'liste-noire').length, Object.values(members).filter(m => m.status === 'liste-noire').length], backgroundColor: ['#3a6241', '#778152', '#9b9c28'] }]
+        }
+      });
+
+      new Chart(document.getElementById('stats-contributions'), {
         type: 'bar',
         data: {
-          labels: contributions.map(c => c.name),
-          datasets: [{
-            label: 'Montant collecté',
-            data: contributions.map(c => {
-              return members.reduce((sum, m) => {
-                return sum + c.years.reduce((ySum, y) => {
-                  return ySum + m.contributions[c.name][y].filter(Boolean).length * c.amount;
-                }, 0);
-              }, 0);
-            }),
-            backgroundColor: '#9b9c28'
-          }]
+          labels: ['À jour', 'En retard'],
+          datasets: [{ label: 'Membres', data: [upToDateMembers, membersCount - upToDateMembers], backgroundColor: ['#3a6241', '#9b9c28'] }]
         }
       });
+    });
+  });
+}
+
+function updateCallMembersList() {
+  const search = document.querySelector('#video-calls-search').value.toLowerCase();
+  const list = document.querySelector('#members-call-list');
+  get(ref(db, 'members')).then((snapshot) => {
+    const members = snapshot.val() || {};
+    list.innerHTML = Object.values(members)
+      .filter(m => `${m.firstname} ${m.lastname}`.toLowerCase().includes(search) || m.code.toLowerCase().includes(search))
+      .map(m => `
+        <div class="member-card">
+          <input type="checkbox" id="call-${m.code}" value="${m.code}" onchange="updateSelectedCallMembers('${m.code}', this.checked)">
+          <label for="call-${m.code}">${m.firstname} ${m.lastname} (${m.code})</label>
+        </div>
+      `).join('');
+  });
+}
+
+function updateSelectedCallMembers(code, checked) {
+  if (checked) {
+    selectedCallMembers.push(code);
+  } else {
+    selectedCallMembers = selectedCallMembers.filter(c => c !== code);
+  }
+}
+
+function toggleCallAll() {
+  const checkAll = document.querySelector('#call-all').checked;
+  get(ref(db, 'members')).then((snapshot) => {
+    const members = snapshot.val() || {};
+    selectedCallMembers = checkAll ? Object.keys(members) : [];
+    document.querySelectorAll('#members-call-list input[type=checkbox]').forEach(checkbox => {
+      checkbox.checked = checkAll;
     });
   });
 }
 
 function initVideoCall() {
-  database.ref('members').on('value', snapshot => {
-    const members = snapshot.val() ? Object.entries(snapshot.val()).map(([id, m]) => ({ id, ...m })) : [];
-    const search = document.querySelector('#video-calls-search').value.toLowerCase();
-    const list = document.querySelector('#members-call-list');
-    list.innerHTML = members
-      .filter(m => `${m.firstname} ${m.lastname}`.toLowerCase().includes(search))
-      .map(m => `
-        <div>
-          <input type="checkbox" id="call-${m.id}" value="${m.id}" onchange="toggleCallMember('${m.id}')">
-          <label for="call-${m.id}">${m.firstname} ${m.lastname}</label>
-        </div>
-      `).join('');
-  });
-}
-
-function toggleCallMember(memberId) {
-  if (selectedCallMembers.includes(memberId)) {
-    selectedCallMembers = selectedCallMembers.filter(id => id !== memberId);
-  } else {
-    selectedCallMembers.push(memberId);
+  if (!currentUser || !['admin', 'tresorier', 'president', 'secretaire'].includes(currentUser.role)) {
+    document.querySelector('#video-call-container').innerHTML = '<p>Accès réservé aux membres du bureau.</p>';
+    return;
   }
-}
-
-function toggleCallAll() {
-  const callAll = document.querySelector('#call-all').checked;
-  database.ref('members').once('value').then(snapshot => {
-    const members = snapshot.val() ? Object.values(snapshot.val()) : [];
-    selectedCallMembers = callAll ? members.map(m => m.id) : [];
-    members.forEach(m => {
-      document.querySelector(`#call-${m.id}`).checked = callAll;
-    });
-  });
+  updateCallMembersList();
+  document.querySelector('#video-call-container').innerHTML = '<p>Sélectionnez les membres à appeler ou cochez "Cocher tout".</p>';
 }
 
 function startCall(type) {
-  if (!selectedCallMembers.length) {
-    alert('Veuillez sélectionner au moins un membre pour l\'appel.');
+  if (!currentUser || !['admin', 'tresorier', 'president', 'secretaire'].includes(currentUser.role)) return;
+  if (selectedCallMembers.length === 0) {
+    alert('Veuillez sélectionner au moins un membre.');
     return;
   }
-  const roomId = `room_${Date.now()}`;
-  const container = document.querySelector('#video-call-container');
-  container.innerHTML = `<where-by room="https://whereby.com/${roomId}" displayName="${currentUser ? currentUser.firstname : 'Utilisateur'}"></where-by>`;
-  sendNotification('Appel', `Un appel ${type} a été initié dans la salle ${roomId}`);
+  const roomId = `ansar-room-${Date.now()}`;
+  const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmFwcGVhci5pbiIsImF1ZCI6Imh0dHBzOi8vYXBpLmFwcGVhci5pbi92MSIsImV4cCI6OTAwNzE5OTI1NDc0MDk5MSwiaWF0IjoxNzUyNzQzMzY5LCJvcmdhbml6YXRpb25JZCI6MzIwMzY3LCJqdGkiOiJmYzdmMjhiYS0xZTViLTRhYjAtOGQwZi1kZWNjNzAxYzkyNzAifQ.2WXwlPQj_-Da17X3IXJrVFYfiAsGlxzaRftPiG5oFWI';
+  const videoCallContainer = document.querySelector('#video-call-container');
+  const roomUrl = `https://ansar-almouyassar.whereby.com/${roomId}?token=${token}&${type === 'audio' ? 'audioOnly=true' : ''}&displayName=${currentUser.firstname || 'Admin'} ${currentUser.lastname || ''}`;
+  videoCallContainer.innerHTML = `<whereby-embed room="${roomUrl}"></whereby-embed>`;
+  alert(`${type === 'video' ? 'Appel vidéo' : 'Appel audio'} démarré avec ${selectedCallMembers.length} membre(s).`);
 }
 
-function payWithWave() {
-  window.open('https://wave.com', '_blank');
+function payViaWave() {
+  window.open('https://pay.wave.com/m/M_sn_dyIw8DZWV46K/c/sn/?amount=2000', '_blank');
 }
 
-function payWithOrangeMoney() {
-  window.open('https://www.orangemoney.sn', '_blank');
+function payViaOrangeMoney() {
+  window.open('https://sugu.orange-sonatel.com/mp/dc3PQ0eEeSdcKQWVvcTH2Z', '_blank');
 }
 
 function sendNotification(title, body) {
   if ('Notification' in window && Notification.permission === 'granted') {
     new Notification(title, { body });
+  } else if ('Notification' in window) {
+    Notification.requestPermission().then(permission => {
+      if (permission === 'granted') {
+        new Notification(title, { body });
+      }
+    });
   }
 }
 
-function updateCoranContent() {
-  const search = document.querySelector('#coran-search').value.toLowerCase();
-  const juz = Array.from({ length: 30 }, (_, i) => ({
-    id: i + 1,
-    name: `Juz' ${i + 1}`,
-    description: `Juz' ${i + 1} du Saint Coran`
-  }));
-  const content = document.querySelector('#coran-content');
-  content.innerHTML = juz
-    .filter(j => j.name.toLowerCase().includes(search) || j.description.toLowerCase().includes(search))
-    .map(j => `
-      <div class="juz-card">
-        <h4>${j.name}</h4>
-        <p>${j.description}</p>
-      </div>
-    `).join('');
-}
+document.querySelector('#members-search').addEventListener('input', updateMembersList);
+document.querySelector('#events-search').addEventListener('input', updateEventsList);
+document.querySelector('#coran-search').addEventListener('input', updateCoranContent);
+document.querySelector('#library-search').addEventListener('input', updateLibraryContent);
+document.querySelector('#edit-member-search').addEventListener('input', updateEditMembersList);
+document.querySelector('#gallery-admin-search').addEventListener('input', updateGalleryAdminList);
+document.querySelector('#events-admin-search').addEventListener('input', updateEventsAdminList);
+document.querySelector('#messages-admin-search').addEventListener('input', updateMessagesAdminList);
+document.querySelector('#notes-search').addEventListener('input', updateNotesList);
+document.querySelector('#internal-docs-search').addEventListener('input', updateInternalDocsList);
+document.querySelector('#suggestions-search').addEventListener('input', updateSuggestionsList);
+document.querySelector('#video-calls-search').addEventListener('input', updateCallMembersList);
+document.querySelector('#auto-messages-search').addEventListener('input', updateAutoMessagesList);
+document.querySelector('#contributions-admin-search').addEventListener('input', updateContributionsAdminList);
+document.querySelector('#president-files-search').addEventListener('input', updatePresidentFilesList);
+document.querySelector('#secretary-files-search').addEventListener('input', updateSecretaryFilesList);
 
-function updateLibraryContent() {
-  const search = document.querySelector('#library-search').value.toLowerCase();
-  const books = [
-    { title: 'Sahih Al-Bukhari', author: 'Imam Al-Bukhari' },
-    { title: 'Sahih Muslim', author: 'Imam Muslim' },
-    { title: 'Riyad As-Salihin', author: 'Imam An-Nawawi' }
-  ];
-  const content = document.querySelector('#library-content');
-  content.innerHTML = books
-    .filter(b => b.title.toLowerCase().includes(search) || b.author.toLowerCase().includes(search))
-    .map(b => `
-      <div class="book-card">
-        <h4>${b.title}</h4>
-        <p>Auteur: ${b.author}</p>
-      </div>
-    `).join('');
-}
-
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/service-worker.js');
-}
-
-if ('Notification' in window && Notification.permission !== 'granted') {
-  Notification.requestPermission();
-}
+initDB();

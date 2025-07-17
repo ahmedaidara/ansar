@@ -31,8 +31,8 @@ body {
   position: fixed;
   top: 0;
   width: 100%;
-  box-sizing: border-box;
   z-index: 1000;
+  box-sizing: border-box;
 }
 
 .logo {
@@ -42,7 +42,7 @@ body {
 .settings-icon {
   cursor: pointer;
   font-size: 28px;
-  margin-right: 1rem;
+  margin-right: 10px;
 }
 
 main {
@@ -109,6 +109,7 @@ main {
   cursor: pointer;
   font-size: 1.2rem;
   transition: transform 0.3s ease;
+  margin: 0.5rem;
 }
 
 .cta-button:hover {
@@ -219,6 +220,17 @@ main {
   color: white;
 }
 
+#chatbot-controls {
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.8);
+  text-align: center;
+}
+
+.clear-history {
+  padding: 0.5rem;
+  font-size: 0.9rem;
+}
+
 #chatbot-form {
   display: flex;
   padding: 0.5rem;
@@ -228,11 +240,6 @@ main {
 #chatbot-input {
   flex-grow: 1;
   margin-right: 0.5rem;
-}
-
-.clear-history {
-  margin: 0.5rem;
-  align-self: center;
 }
 
 #secret-entry {
@@ -347,6 +354,10 @@ canvas {
     padding: 0.5rem;
   }
 
+  .top-nav {
+    padding: 1rem;
+  }
+
   .bottom-nav {
     grid-template-columns: repeat(8, 1fr);
     gap: 0.3rem;
@@ -358,15 +369,7 @@ canvas {
   }
 
   .chatbot-container {
-    width: 90%;
+    width: 300px;
     height: 400px;
-  }
-
-  .top-nav {
-    padding: 1rem;
-  }
-
-  .settings-icon {
-    margin-right: 0.5rem;
   }
 }

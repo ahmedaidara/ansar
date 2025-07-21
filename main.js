@@ -1538,52 +1538,101 @@ async function updatePresidentFilesList() {
   }
 }
 
+// Ajouter un fichier secrétaire
 document.querySelector('#add-secretary-file-form')?.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const fileInput = document.querySelector('#secretary-file');
-  const file = fileInput?.files[0];
-  if (!file) {
-    alert('Veuillez sélectionner un fichier');
-    return;
-  }
+  const fileData = {
+    name: document.querySelector('#secretary-file-name')?.value.trim() || 'Fichier sans nom',
+    category: document.querySelector('#secretary-file-category')?.value.trim() || '',
+    url: document.querySelector('#secretary-file-url')?.value.trim() || '',
+    createdAt: new Date().toISOString()
+  };
 
   try {
-    const fileData = {
-      name: file.name,
-      category: document.querySelector('#secretary-file-category').value.trim(),
-      url: fileUrl,
-      createdAt: new Date().toISOString()
-    };
-
+    if (!fileData.url.match(/\.(jpeg|jpg|png|gif)$/i)) {
+      throw new Error('Lien d\'image invalide. Utilisez un lien vers une image (jpg, png, gif).');
+    }
     await saveData('secretaryFiles', fileData);
     document.querySelector('#add-secretary-file-form').reset();
     await updateSecretaryFilesList();
-    alert('Fichier ajouté avec succès');
+    await updateHomeGallery();
+    alert('Image ajoutée avec succès');
   } catch (error) {
     console.error('Erreur addSecretaryFile:', error);
-    alert('Erreur lors de l\'ajout du fichier');
+    alert('Erreur lors de l\'ajout de l\'image : ' + error.message);
   }
 });
 
+// Mettre à jour la liste des fichiers secrétaire
 async function updateSecretaryFilesList() {
   try {
     const files = await loadData('secretaryFiles');
     const search = document.querySelector('#secretary-files-search')?.value.toLowerCase() || '';
     const list = document.querySelector('#secretary-files-list');
-    if (!list) return;
+    if (!list) {
+      console.error('Élément #secretary-files-list introuvable');
+      return;
+    }
 
     list.innerHTML = files
-      .filter(f => f.name.toLowerCase().includes(search) || f.category.toLowerCase().includes(search))
+      .filter(f => f.name.toLowerCase().includes(search) || f.category.toLowerCase().includes(search) || f.url.toLowerCase().includes(search))
       .map(f => `
         <div class="file-card">
-          <p><strong>${f.category}</strong>: <a href="${f.url}" target="_blank">${f.name}</a></p>
+          <p><strong>${f.category}</strong>: ${f.name}</p>
+          <p><a href="${f.url}" target="_blank">${f.url}</a></p>
           <p class="file-date">${formatDate(f.createdAt)}</p>
+          <button class="cta-button danger" onclick="deleteSecretaryFile('${f.id}')">Supprimer</button>
         </div>
       `).join('') || '<p>Aucun fichier disponible</p>';
   } catch (error) {
     console.error('Erreur updateSecretaryFilesList:', error);
+    alert('Erreur lors du chargement des fichiers');
   }
 }
+
+// Supprimer un fichier secrétaire
+async function deleteSecretaryFile(fileId) {
+  try {
+    await firebase.firestore().collection('secretaryFiles').doc(fileId).delete();
+    console.log('Fichier supprimé:', fileId);
+    await updateSecretaryFilesList();
+    await updateHomeGallery();
+    alert('Image supprimée avec succès');
+  } catch (error) {
+    console.error('Erreur deleteSecretaryFile:', error);
+    alert('Erreur lors de la suppression de l\'image');
+  }
+}
+
+// Mettre à jour la galerie dans la page d'accueil
+async function updateHomeGallery() {
+  try {
+    const files = await loadData('secretaryFiles');
+    const gallery = document.querySelector('#home-gallery');
+    if (!gallery) {
+      console.error('Élément #home-gallery introuvable');
+      return;
+    }
+
+    gallery.innerHTML = files
+      .map(f => `
+        <div class="gallery-item">
+          <img src="${f.url}" alt="${f.name}" class="gallery-image">
+        </div>
+      `).join('') || '<p>Aucune image disponible</p>';
+
+    // Appeler à chaque affichage de la page d'accueil
+    document.querySelector('#home')?.addEventListener('transitionend', () => {
+      if (document.querySelector('#home').classList.contains('active')) {
+        updateHomeGallery();
+      }
+    });
+  } catch (error) {
+    console.error('Erreur updateHomeGallery:', error);
+    alert('Erreur lors du chargement de la galerie');
+  }
+}
+
 
 // ==================== FONCTIONS STATISTIQUES ====================
 

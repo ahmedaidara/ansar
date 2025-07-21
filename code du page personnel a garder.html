@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Espace Personnel</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            font-family: Arial, sans-serif;
+            overflow-x: hidden;
+            background-color: #1f4a49;
+        }
+
+        .main {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .top-section {
+            height: 5cm;
+            background-color: #0ba561;
+            position: relative;
+        }
+
+        .profile-container {
+            position: absolute;
+            bottom: -130px; /* Ajusté pour l'icône plus grande */
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+        }
+
+        .profile-icon {
+            width: 140px; /* Augmenté de 120px à 140px */
+            height: 140px; /* Augmenté de 120px à 140px */
+            border-radius: 50%;
+            border: 5px solid #1f4a49; /* Ajusté de 4px à 5px */
+            background-color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .profile-icon svg {
+            width: 84px; /* Augmenté de 72px à 84px */
+            height: 84px; /* Augmenté de 72px à 84px */
+        }
+
+        .user-name {
+            color: #FFFFFF;
+            text-align: center;
+            font-size: 2rem;
+            font-weight: bold;
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+
+        .bottom-section {
+            padding-top: 120px; /* Ajusté pour éviter chevauchement */
+            background-color: #1f4a49;
+            flex: 1;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .container {
+            max-width: 850px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #1daf63;
+            margin-bottom: 2px;
+            text-align: center;
+            font-size: 1.5rem;
+        }
+
+        h2 {
+            color: #1daf63;
+            margin-bottom: 2px;
+            text-align: center;
+        }
+
+        .section {
+            background-color: #2a4d45;
+            border-radius: 15px;
+            padding: 10px;
+            margin: 0 10px 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .info-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+        }
+
+        .info-card {
+            background-color: #3a5f56;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .info-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .info-card label {
+            display: block;
+            font-size: 0.85rem;
+            color: #a8e6cf;
+            margin-bottom: 5px;
+        }
+
+        .info-card span {
+            font-size: 1rem;
+            font-weight: bold;
+            color: #FFFFFF;
+        }
+
+        .cotisations-section {
+            margin-bottom: 20px;
+        }
+
+        .cotisations-section h3 {
+            color: #FFFFFF;
+        }
+
+        .year-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .month {
+            background-color: #3a5f56;
+            padding: 8px;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #FFFFFF;
+        }
+
+        .month.paid::after {
+            content: '✔️';
+            color: #a8e6cf;
+            margin-left: 5px;
+        }
+
+        .month.unpaid::after {
+            content: '✖️';
+            color: #ff6b6b;
+            margin-left: 5px;
+        }
+
+        .global-cotisations {
+            background-color: #3a5f56;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .global-cotisations h3 {
+            color: #FFFFFF;
+        }
+
+        .global-cotisations p {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1rem;
+            margin-bottom: 8px;
+            color: #FFFFFF;
+        }
+
+        .payment-methods {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 15px;
+            margin-bottom: 20px;
+        }
+
+        .payment-btn {
+            background-color: #a8e6cf;
+            color: #1a3c34;
+            padding: 10px 25px;
+            border: none;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+
+        .payment-btn:hover {
+            background-color: #8cc7a1;
+            transform: scale(1.05);
+        }
+
+        .suggestions-section textarea {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            background-color: #3a5f56;
+            color: #e0e0e0;
+            resize: vertical;
+            margin-top: 10px;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+
+        .suggestions-section button {
+            background-color: #a8e6cf;
+            color: #1a3c34;
+            padding: 10px 25px;
+            border: none;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+
+        .suggestions-section button:hover {
+            background-color: #8cc7a1;
+            transform: scale(1.05);
+        }
+
+        .logout-btn {
+            display: block;
+            margin: 30px auto 20px;
+            background-color: #ff6b6b;
+            color: #fff;
+            padding: 10px 25px;
+            border: none;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background-color: #e55a5a;
+            transform: scale(1.05);
+        }
+
+        @media (max-width: 600px) {
+            .section {
+                padding: 8px;
+                margin: 0 5px 10px;
+            }
+
+            .info-section {
+                grid-template-columns: 1fr;
+            }
+
+            .year-grid {
+                grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+            }
+
+            .profile-icon {
+                width: 112px; /* Augmenté de 80px à 112px */
+                height: 112px; /* Augmenté de 80px à 112px */
+            }
+
+            .profile-icon svg {
+                width: 67px; /* Augmenté de 50px à 67px */
+                height: 67px; /* Augmenté de 50px à 67px */
+            }
+
+            .profile-container {
+                bottom: -105px; /* Ajusté pour mobile */
+            }
+
+            h1 {
+                font-size: 1.2rem;
+            }
+
+            .user-name {
+                font-size: 1.6rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main">
+        <!-- Partie haute en vert avec profil -->
+        <div class="top-section">
+            <div class="profile-container">
+                <div class="profile-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#000000">
+                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                    </svg>
+                </div>
+                <p class="user-name">Ahmed Said Aidara</p>
+            </div>
+        </div>
+
+        <!-- Partie basse avec contenu -->
+        <div class="bottom-section">
+            <div class="container">
+                <h1>Compte</h1>
+
+                <!-- Section 1 : Informations personnelles -->
+                <div class="section info-section">
+                    <div class="info-card">
+                        <label>Code</label>
+                        <span>123456</span>
+                    </div>
+                     <div class="info-card">
+                        <label>Role</label>
+                        <span>President</span>
+                    </div>             
+                    <div class="info-card">
+                        <label>Statut</label>
+                        <span>Actif</span>
+                    </div>
+                    <div class="info-card">
+                        <label>E-mail</label>
+                        <span>exemple@domaine.com</span>
+                    </div>
+                    <div class="info-card">
+                        <label>Téléphone</label>
+                        <span>+123 456 789</span>
+                    </div>
+                </div>
+
+                <!-- Section 2 : Cotisations -->
+                <div class="section cotisations-section">
+                    <h2>Mes Cotisations</h2>
+                    <h3>2023</h3>
+                    <div class="year-grid">
+                        <div class="month paid">Janvier</div>
+                        <div class="month paid">Février</div>
+                        <div class="month paid">Mars</div>
+                        <div class="month unpaid">Avril</div>
+                        <div class="month unpaid">Mai</div>
+                        <div class="month unpaid">Juin</div>
+                        <div class="month unpaid">Juillet</div>
+                        <div class="month unpaid">Août</div>
+                        <div class="month unpaid">Septembre</div>
+                        <div class="month unpaid">Octobre</div>
+                        <div class="month unpaid">Novembre</div>
+                        <div class="month unpaid">Décembre</div>
+                    </div>
+                    <h3>2024</h3>
+                    <div class="year-grid">
+                        <div class="month paid">Janvier</div>
+                        <div class="month paid">Février</div>
+                        <div class="month paid">Mars</div>
+                        <div class="month paid">Avril</div>
+                        <div class="month paid">Mai</div>
+                        <div class="month unpaid">Juin</div>
+                        <div class="month unpaid">Juillet</div>
+                        <div class="month unpaid">Août</div>
+                        <div class="month unpaid">Septembre</div>
+                        <div class="month unpaid">Octobre</div>
+                        <div class="month unpaid">Novembre</div>
+                        <div class="month unpaid">Décembre</div>
+                    </div>
+                    <h3>2025</h3>
+                    <div class="year-grid">
+                        <div class="month paid">Janvier</div>
+                        <div class="month paid">Février</div>
+                        <div class="month paid">Mars</div>
+                        <div class="month paid">Avril</div>
+                        <div class="month paid">Mai</div>
+                        <div class="month paid">Juin</div>
+                        <div class="month paid">Juillet</div>
+                        <div class="month unpaid">Août</div>
+                        <div class="month unpaid">Septembre</div>
+                        <div class="month unpaid">Octobre</div>
+                        <div class="month unpaid">Novembre</div>
+                        <div class="month unpaid">Décembre</div>
+                    </div>
+
+                    <!-- Cotisations globales -->
+                    <div class="global-cotisations">
+                        <h3>Cotisations Globales</h3>
+                        <p>Conférence (300 000) <span>✅</span></p>
+                    </div>
+
+                    <!-- Méthodes de paiement -->
+                    <div class="payment-methods">
+                        <button class="payment-btn">Payer via Wave</button>
+                        <button class="payment-btn">Payer via Orange Money</button>
+                    </div>
+                </div>
+
+                <!-- Section 3 : Suggestions -->
+                <div class="section suggestions-section">
+                    <h2>Suggestions</h2>
+                    <textarea placeholder="Écrivez vos suggestions ici..." rows="4"></textarea>
+                    <button>Envoyer</button>
+                </div>
+
+                <!-- Bouton Déconnexion -->
+                <button class="logout-btn">Se Déconnecter</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -20,6 +20,12 @@ body {
   overflow-x: hidden;
 }
 
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
 .top-nav {
   display: none;
 }
@@ -168,7 +174,11 @@ main {
 }
 
 #personal {
-  font-family: 'Open Sans', sans-serif;
+  font-family: 'Times New Roman', Times, serif;
+  background-color: var(--secondary-color);
+}
+
+#personal .main {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -192,7 +202,7 @@ main {
   width: 140px;
   height: 140px;
   border-radius: 50%;
-  border: 5px solid #1f4a49;
+  border: 5px solid var(--secondary-color);
   background-color: white;
   display: flex;
   justify-content: center;
@@ -208,7 +218,7 @@ main {
 }
 
 #personal .user-name {
-  color: #FFFFFF;
+  color: var(--text-color);
   text-align: center;
   font-size: 2rem;
   font-weight: bold;
@@ -218,8 +228,9 @@ main {
 
 #personal .bottom-section {
   padding-top: 120px;
-  background-color: transparent; /* Fond transparent pour laisser apparaître le fond principal */
+  background-color: var(--secondary-color);
   flex: 1;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 #personal .container {
@@ -276,11 +287,15 @@ main {
 #personal .info-card span {
   font-size: 1rem;
   font-weight: bold;
-  color: #FFFFFF;
+  color: var(--text-color);
 }
 
 #personal .cotisations-section {
   margin-bottom: 20px;
+}
+
+#personal .cotisations-section h3 {
+  color: var(--text-color);
 }
 
 #personal .year-grid {
@@ -296,7 +311,7 @@ main {
   border-radius: 6px;
   text-align: center;
   font-size: 0.8rem;
-  color: #FFFFFF;
+  color: var(--text-color);
 }
 
 #personal .month.paid::after {
@@ -319,7 +334,7 @@ main {
 }
 
 #personal .global-cotisations h3 {
-  color: #FFFFFF;
+  color: var(--text-color);
 }
 
 #personal .global-cotisations p {
@@ -327,7 +342,7 @@ main {
   justify-content: space-between;
   font-size: 1rem;
   margin-bottom: 8px;
-  color: #FFFFFF;
+  color: var(--text-color);
 }
 
 #personal .payment-methods {
@@ -357,16 +372,15 @@ main {
 
 #personal .suggestions-section textarea {
   width: 100%;
-  max-width: 600px; /* Limiter la largeur pour éviter le débordement */
-  margin: 10px auto; /* Centrer horizontalement */
   padding: 10px;
   border-radius: 8px;
   border: none;
   background-color: #3a5f56;
   color: #e0e0e0;
   resize: vertical;
+  margin-top: 10px;
+  margin-bottom: 10px;
   font-size: 0.9rem;
-  display: block; /* Assurer que le textarea est centré */
 }
 
 #personal .suggestions-section button {
@@ -379,8 +393,6 @@ main {
   font-weight: bold;
   cursor: pointer;
   transition: background-color 0.3s ease, transform 0.3s ease;
-  margin: 10px auto; /* Centrer le bouton */
-  display: block; /* Assurer que le bouton est centré */
 }
 
 #personal .suggestions-section button:hover {
@@ -407,39 +419,137 @@ main {
   transform: scale(1.05);
 }
 
-#personal .cta-button {
+#personal #personal-login {
+  max-width: 400px;
+  margin: 20px auto;
+}
+
+#personal #personal-login h2 {
+  color: #1daf63;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+#personal #personal-login-form label {
+  display: block;
+  font-size: 1rem;
+  color: var(--text-color);
+  margin-bottom: 5px;
+}
+
+#personal #personal-login-form input {
+  background: #3a5f56;
+  color: var(--text-color);
+  border: 1px solid #a8e6cf;
+}
+
+#personal #personal-login-form .cta-button {
   background-color: #a8e6cf;
   color: #1a3c34;
-  padding: 10px 25px;
-  border: none;
-  border-radius: 20px;
-  font-size: 0.9rem;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.3s ease;
+  margin-top: 15px;
 }
 
-#personal .cta-button:hover {
+#personal #personal-login-form .cta-button:hover {
   background-color: #8cc7a1;
-  transform: scale(1.05);
 }
 
-#personal input,
-#personal textarea,
-#personal select {
-  padding: 0.8rem;
-  background: var(--secondary-color);
-  color: white;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  font-size: 1rem;
+@media (max-width: 600px) {
+  #personal .section {
+    padding: 8px;
+    margin: 0 5px 10px;
+  }
+
+  #personal .info-section {
+    grid-template-columns: 1fr;
+  }
+
+  #personal .year-grid {
+    grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+  }
+
+  #personal .profile-icon {
+    width: 112px;
+    height: 112px;
+  }
+
+  #personal .profile-icon svg {
+    width: 67px;
+    height: 67px;
+  }
+
+  #personal .profile-container {
+    bottom: -105px;
+  }
+
+  #personal h1 {
+    font-size: 1.2rem;
+  }
+
+  #personal .user-name {
+    font-size: 1.6rem;
+  }
 }
 
-#personal label {
-  color: #a8e6cf;
-  font-size: 0.85rem;
-  margin-bottom: 5px;
-  display: block;
+@media (max-width: 600px) {
+  #personal .section {
+    padding: 8px;
+    margin: 0 5px 10px;
+  }
+
+  #personal .info-section {
+    grid-template-columns: 1fr;
+  }
+
+  #personal .year-grid {
+    grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+  }
+
+  #personal .profile-icon {
+    width: 112px;
+    height: 112px;
+  }
+
+  #personal .profile-icon svg {
+    width: 67px;
+    height: 67px;
+  }
+
+  #personal .profile-container {
+    bottom: -105px;
+  }
+
+  #personal h1 {
+    font-size: 1.2rem;
+  }
+
+  #personal .user-name {
+    font-size: 1.6rem;
+  }
+
+  main {
+    padding: 0.5rem;
+  }
+
+  .header {
+    height: 150px;
+  }
+
+  .chatbot-container {
+    width: 90%;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .image-card {
+    width: 90%;
+    height: 150px;
+  }
+
+  .gallery-image {
+    max-width: 90%;
+  }
 }
 
 .bottom-nav {
@@ -621,7 +731,12 @@ input, textarea, select {
   display: block;
 }
 
-.member-card, .contribution-card, .event-card, .suggestion-card, .note-card, .file-card {
+.member-card,
+.contribution-card,
+.event-card,
+.suggestion-card,
+.note-card,
+.file-card {
   background: var(--secondary-color);
   border: 1px solid #ccc;
   padding: 1rem;
@@ -690,70 +805,4 @@ canvas {
 
 .link-button:hover {
   transform: scale(1.05);
-}
-
-@media (max-width: 600px) {
-  main {
-    padding: 0.5rem;
-  }
-
-  .header {
-    height: 150px;
-  }
-
-  .chatbot-container {
-    width: 90%;
-  }
-
-  .grid {
-    grid-template-columns: 1fr;
-  }
-
-  .image-card {
-    width: 90%;
-    height: 150px;
-  }
-
-  .gallery-image {
-    max-width: 90%;
-  }
-
-  #personal .section {
-    padding: 8px;
-    margin: 0 5px 10px;
-  }
-
-  #personal .info-section {
-    grid-template-columns: 1fr; /* Une seule colonne sur mobile */
-  }
-
-  #personal .year-grid {
-    grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
-  }
-
-  #personal .profile-icon {
-    width: 112px;
-    height: 112px;
-  }
-
-  #personal .profile-icon svg {
-    width: 67px;
-    height: 67px;
-  }
-
-  #personal .profile-container {
-    bottom: -105px;
-  }
-
-  #personal h1 {
-    font-size: 1.2rem;
-  }
-
-  #personal .user-name {
-    font-size: 1.6rem;
-  }
-
-  #personal .suggestions-section textarea {
-    max-width: 90%; /* Réduire la largeur sur mobile */
-  }
 }

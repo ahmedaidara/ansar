@@ -103,135 +103,140 @@
     </section>
 
     <!-- Espace Secret Général -->
-<section id="secret" class="page">
-  <button class="cta-button back-button" onclick="showPage('home')"><span class="material-icons">arrow_back</span> Retour</button>
-  <h2>Espace Secret - Administration</h2>
-  <div class="tabs">
-    <button class="tab-button active" onclick="showTab('add-member')">Ajouter un Membre</button>
-    <button class="tab-button" onclick="showPage('admin-members')">Modifier un Membre</button>
-    <button class="tab-button" onclick="showTab('events-admin')">Événements</button>
-    <button class="tab-button" onclick="showTab('messages-admin')">Messages</button>
-    <button class="tab-button" onclick="showTab('notes')">Notes</button>
-    <button class="tab-button" onclick="showTab('suggestions-admin')">Suggestions</button>
-    <button class="tab-button" onclick="showTab('stats')">Statistiques</button>
-    <button class="tab-button" onclick="showTab('video-calls')">Appels</button>
-    <button class="tab-button" onclick="showTab('auto-messages')">Messages Automatisés</button>
-  </div>
-  <div id="add-member" class="tab-content active">
-    <h3>Ajouter un Membre</h3>
-    <form id="add-member-form">
-      <input type="text" id="new-member-firstname" placeholder="Prénom (obligatoire)" required>
-      <input type="text" id="new-member-lastname" placeholder="Nom (obligatoire)" required>
-      <input type="number" id="new-member-age" placeholder="Âge">
-      <input type="text" id="new-member-dob" placeholder="Date de naissance (JJMMAAAA)">
-      <input type="text" id="new-member-birthplace" placeholder="Lieu de naissance">
-      <input type="email" id="new-member-email" placeholder="Email">
-      <input type="text" id="new-member-activity" placeholder="Activité actuelle">
-      <input type="text" id="new-member-address" placeholder="Adresse">
-      <input type="tel" id="new-member-phone" placeholder="Numéro de téléphone">
-      <input type="text" id="new-member-residence" placeholder="Résidence actuelle">
-      <select id="new-member-role">
-        <option value="membre">Membre Simple</option>
-        <option value="tresorier">Trésorier</option>
-        <option value="president">Président</option>
-        <option value="secretaire">Secrétaire</option>
-      </select>
-      <select id="new-member-status">
-        <option value="actif">Actif</option>
-        <option value="inactif">Inactif</option>
-        <option value="liste-noire">Liste noire</option>
-      </select>
-      <button type="submit" class="cta-button">Ajouter</button>
-    </form>
-  </div>
-  <div id="events-admin" class="tab-content">
-    <h3>Ajouter un Événement</h3>
-    <form id="add-event-form">
-      <input type="text" id="event-name" placeholder="Nom de l'événement" required>
-      <input type="date" id="event-date" required>
-      <input type="time" id="event-time" required>
-      <textarea id="event-description" placeholder="Description" required></textarea>
-      <button type="submit" class="cta-button">Ajouter</button>
-    </form>
-    <input type="text" id="events-admin-search" placeholder="Rechercher un événement..." class="search-bar">
-    <div id="events-admin-list"></div>
-  </div>
-  <div id="messages-admin" class="tab-content">
-    <h3>Gérer les Messages</h3>
-    <form id="add-message-form">
-      <input type="text" id="message-title" placeholder="Titre du message" required>
-      <textarea id="message-text" placeholder="Contenu du message" required></textarea>
-      <button type="submit" class="cta-button">Envoyer</button>
-    </form>
-    <input type="text" id="messages-admin-search" placeholder="Rechercher un message..." class="search-bar">
-    <div id="messages-admin-list"></div>
-  </div>
-  <div id="notes" class="tab-content">
-    <h3>Notes</h3>
-    <form id="add-note-form">
-      <input type="text" id="note-theme" placeholder="Thème (ex. : Réunion)" required>
-      <textarea id="note-text" placeholder="Contenu de la note" required></textarea>
-      <button type="submit" class="cta-button">Ajouter</button>
-    </form>
-    <input type="text" id="notes-search" placeholder="Rechercher une note..." class="search-bar">
-    <div id="notes-list"></div>
-  </div>
-  <div id="suggestions-admin" class="tab-content">
-    <h3>Suggestions des Membres</h3>
-    <input type="text" id="suggestions-search" placeholder="Rechercher une suggestion..." class="search-bar">
-    <div id="suggestions-list"></div>
-  </div>
-  <div id="stats" class="tab-content">
-    <h3>Statistiques</h3>
-    <canvas id="stats-total-amount"></canvas>
-    <canvas id="stats-members"></canvas>
-    <canvas id="stats-status"></canvas>
-    <canvas id="stats-contributions"></canvas>
-  </div>
-  <div id="video-calls" class="tab-content">
-    <h3>Appels Vidéo & Audio</h3>
-    <div class="search-filter-container">
-      <input type="text" id="video-calls-search" placeholder="Rechercher un membre..." class="search-bar">
-    </div>
-    <div id="members-call-list"></div>
-    <input type="checkbox" id="call-all" onchange="toggleCallAll()">
-    <label for="call-all">Cocher tout</label>
-    <button class="cta-button" onclick="startCall('video')">Appel Vidéo</button>
-    <button class="cta-button" onclick="startCall('audio')">Appel Audio</button>
-    <div id="video-call-container" style="width: 100%; height: 500px;"></div>
-  </div>
-  <div id="auto-messages" class="tab-content">
-    <h3>Messages Automatisés</h3>
-    <form id="add-auto-message-form">
-      <input type="text" id="auto-message-name" placeholder="Nom (ex. : Rappel Cotisation)" required>
-      <textarea id="auto-message-text" placeholder="Contenu du message" required></textarea>
-      <input type="date" id="auto-message-date" required>
-      <input type="time" id="auto-message-time" required>
-      <button type="submit" class="cta-button">Ajouter</button>
-    </form>
-    <input type="text" id="auto-messages-search" placeholder="Rechercher un message automatisé..." class="search-bar">
-    <div id="auto-messages-list"></div>
-  </div>
-</section>
+    <section id="secret" class="page">
+      <button class="cta-button back-button" onclick="showPage('home')"><span class="material-icons">arrow_back</span> Retour</button>
+      <h2>Espace Secret - Administration</h2>
+      <div class="tabs">
+        <button class="tab-button active" onclick="showTab('add-member')">Ajouter un Membre</button>
+        <button class="tab-button" onclick="showTab('edit-member')">Modifier un Membre</button>
+        <button class="tab-button" onclick="showTab('events-admin')">Événements</button>
+        <button class="tab-button" onclick="showTab('messages-admin')">Messages</button>
+        <button class="tab-button" onclick="showTab('notes')">Notes</button>
+        <button class="tab-button" onclick="showTab('suggestions-admin')">Suggestions</button>
+        <button class="tab-button" onclick="showTab('stats')">Statistiques</button>
+        <button class="tab-button" onclick="showTab('video-calls')">Appels</button>
+        <button class="tab-button" onclick="showTab('auto-messages')">Messages Automatisés</button>
+      </div>
+      <div id="add-member" class="tab-content active">
+        <h3>Ajouter un Membre</h3>
+        <form id="add-member-form">
+          <input type="text" id="new-member-firstname" placeholder="Prénom (obligatoire)" required>
+          <input type="text" id="new-member-lastname" placeholder="Nom (obligatoire)" required>
+          <input type="number" id="new-member-age" placeholder="Âge">
+          <input type="text" id="new-member-dob" placeholder="Date de naissance (JJMMAAAA)">
+          <input type="text" id="new-member-birthplace" placeholder="Lieu de naissance">
+          <input type="email" id="new-member-email" placeholder="Email">
+          <input type="text" id="new-member-activity" placeholder="Activité actuelle">
+          <input type="text" id="new-member-address" placeholder="Adresse">
+          <input type="tel" id="new-member-phone" placeholder="Numéro de téléphone">
+          <input type="text" id="new-member-residence" placeholder="Résidence actuelle">
+          <select id="new-member-role">
+            <option value="membre">Membre Simple</option>
+            <option value="tresorier">Trésorier</option>
+            <option value="president">Président</option>
+            <option value="secretaire">Secrétaire</option>
+          </select>
+          <select id="new-member-status">
+            <option value="actif">Actif</option>
+            <option value="inactif">Inactif</option>
+            <option value="liste-noire">Liste noire</option>
+          </select>
+          <button type="submit" class="cta-button">Ajouter</button>
+        </form>
+      </div>
+      <div id="edit-member" class="tab-content">
+<h3>Modifier/Supprimer un Membre</h3>
+<div id="edit-members-list"></div>
+<form id="delete-member-form" style="display: none;">
+  <p>Entrez le code président pour confirmer la suppression :</p>
+  <input type="password" id="delete-member-code" placeholder="Code président" required>
+  <button type="submit" class="cta-button">Confirmer la suppression</button>
+  <button type="button" class="cta-button" onclick="showPage('admin-members')">Annuler</button>
+</form>
+      </div>
+      
+    
+      <div id="events-admin" class="tab-content">
+        <h3>Ajouter un Événement</h3>
+        <form id="add-event-form">
+          <input type="text" id="event-name" placeholder="Nom de l'événement" required>
+          <input type="date" id="event-date" required>
+          <input type="time" id="event-time" required>
+          <textarea id="event-description" placeholder="Description" required></textarea>
+         
+          <button type="submit" class="cta-button">Ajouter</button>
+        </form>
+        <input type="text" id="events-admin-search" placeholder="Rechercher un événement..." class="search-bar">
+        <div id="events-admin-list"></div>
+      </div>
+      <div id="messages-admin" class="tab-content">
+        <h3>Gérer les Messages</h3>
+        <form id="add-message-form">
+          <input type="text" id="message-title" placeholder="Titre du message" required>
+          <textarea id="message-text" placeholder="Contenu du message" required></textarea>
+          <button type="submit" class="cta-button">Envoyer</button>
+        </form>
+        <input type="text" id="messages-admin-search" placeholder="Rechercher un message..." class="search-bar">
+        <div id="messages-admin-list"></div>
+      </div>
+      <div id="notes" class="tab-content">
+        <h3>Notes</h3>
+        <form id="add-note-form">
+          <input type="text" id="note-theme" placeholder="Thème (ex. : Réunion)" required>
+          <textarea id="note-text" placeholder="Contenu de la note" required></textarea>
+          <button type="submit" class="cta-button">Ajouter</button>
+        </form>
+        <input type="text" id="notes-search" placeholder="Rechercher une note..." class="search-bar">
+        <div id="notes-list"></div>
+      </div>
+      <div id="internal-docs" class="tab-content">
+        <h3>Documents Internes</h3>
+        <form id="add-internal-doc-form">
+          <input type="text" id="internal-doc-category" placeholder="Catégorie" required>
+          
+          <button type="submit" class="cta-button">Ajouter</button>
+        </form>
+        <input type="text" id="internal-docs-search" placeholder="Rechercher un document..." class="search-bar">
+        <div id="internal-docs-list"></div>
+      </div>
+      <div id="suggestions-admin" class="tab-content">
+        <h3>Suggestions des Membres</h3>
+        <input type="text" id="suggestions-search" placeholder="Rechercher une suggestion..." class="search-bar">
+        <div id="suggestions-list"></div>
+      </div>
+      <div id="stats" class="tab-content">
+        <h3>Statistiques</h3>
+        <canvas id="stats-total-amount"></canvas>
+        <canvas id="stats-members"></canvas>
+        <canvas id="stats-status"></canvas>
+        <canvas id="stats-contributions"></canvas>
+      </div>
+      <div id="video-calls" class="tab-content">
+        <h3>Appels Vidéo & Audio</h3>
+        <div class="search-filter-container">
+          <input type="text" id="video-calls-search" placeholder="Rechercher un membre..." class="search-bar">
 
-<!-- Espace Administration Membres -->
-<section id="admin-members" class="page">
-  <button class="cta-button back-button" onclick="showPage('secret')"><span class="material-icons">arrow_back</span> Retour</button>
-  <h3>Modifier/Supprimer un Membre</h3>
-  <input type="text" id="edit-member-search" placeholder="Rechercher un membre..." class="search-bar">
-  <select id="edit-member-filter" class="filter-select">
-    <option value="all">Tous</option>
-    <option value="paid">Payé</option>
-    <option value="unpaid">Non payé</option>
-  </select>
-  <div id="edit-members-list"></div>
-  <form id="delete-member-form" style="display: none;">
-    <p>Entrez le code président pour confirmer la suppression :</p>
-    <input type="password" id="delete-member-code" placeholder="Code président" required>
-    <button type="submit" class="cta-button">Confirmer la suppression</button>
-    <button type="button" class="cta-button" onclick="showPage('admin-members')">Annuler</button>
-  </form>
-</section>
+        </div>
+        <div id="members-call-list"></div>
+        <input type="checkbox" id="call-all" onchange="toggleCallAll()">
+        <label for="call-all">Cocher tout</label>
+        <button class="cta-button" onclick="startCall('video')">Appel Vidéo</button>
+        <button class="cta-button" onclick="startCall('audio')">Appel Audio</button>
+        <div id="video-call-container" style="width: 100%; height: 500px;"></div>
+      </div>
+      <div id="auto-messages" class="tab-content">
+        <h3>Messages Automatisés</h3>
+        <form id="add-auto-message-form">
+          <input type="text" id="auto-message-name" placeholder="Nom (ex. : Rappel Cotisation)" required>
+          <textarea id="auto-message-text" placeholder="Contenu du message" required></textarea>
+          <input type="date" id="auto-message-date" required>
+          <input type="time" id="auto-message-time" required>
+          <button type="submit" class="cta-button">Ajouter</button>
+        </form>
+        <input type="text" id="auto-messages-search" placeholder="Rechercher un message automatisé..." class="search-bar">
+        <div id="auto-messages-list"></div>
+      </div>
+    </section>
 
     <!-- Espace Trésorier -->
     <section id="treasurer" class="page">
@@ -392,3 +397,4 @@
   </div>
 </body>
 </html>
+

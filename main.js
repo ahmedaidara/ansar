@@ -128,7 +128,10 @@ function showPage(pageId) {
       case 'coran': updateCoranContent(); break;
       case 'personal': updatePersonalPage(); break;
       case 'library': updateLibraryContent(); break;
-      case 'home': updateMessagePopups(); break;
+      case 'home': 
+        updateMessagePopups();
+        updateHomeGallery(); // Appeler explicitement pour tous les utilisateurs
+        break;
       case 'settings': break;
       case 'secret': 
         if (currentUser?.role === 'president' || currentUser?.role === 'secretaire' || currentUser?.role === 'admin') {
@@ -137,18 +140,25 @@ function showPage(pageId) {
           showPage('home');
         }
         break;
-case 'treasurer':
-  if (currentUser?.role !== 'tresorier') {
-    showPage('home');
-  }
-  break;
+      case 'admin-members':
+        if (currentUser?.role === 'president' || currentUser?.role === 'secretaire' || currentUser?.role === 'admin') {
+          updateEditMembersList();
+        } else {
+          showPage('home');
+        }
+        break;
+      case 'treasurer':
+        if (currentUser?.role !== 'tresorier') {
+          showPage('home');
+        }
+        break;
       case 'treasurer-monthly': updateTreasurerMonthlyList(); break;
       case 'treasurer-member-monthly': break;
       case 'treasurer-global': updateContributionsAdminList(); break;
       case 'treasurer-global-manage': break;
       case 'president': 
         if (currentUser?.role === 'president') {
-          showTab('president-files');
+          showTab('president-settings');
         } else {
           showPage('home');
         }
@@ -165,6 +175,7 @@ case 'treasurer':
     console.error('Erreur showPage:', error);
   }
 }
+
 
 // Mettre à jour la fonction showTab
 function showTab(tabId) {
@@ -1620,19 +1631,11 @@ async function updateHomeGallery() {
           <img src="${f.url}" alt="${f.name}" class="gallery-image">
         </div>
       `).join('') || '<p>Aucune image disponible</p>';
-
-    // Appeler à chaque affichage de la page d'accueil
-    document.querySelector('#home')?.addEventListener('transitionend', () => {
-      if (document.querySelector('#home').classList.contains('active')) {
-        updateHomeGallery();
-      }
-    });
   } catch (error) {
     console.error('Erreur updateHomeGallery:', error);
     alert('Erreur lors du chargement de la galerie');
   }
 }
-
 
 // ==================== FONCTIONS STATISTIQUES ====================
 

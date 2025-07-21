@@ -459,30 +459,34 @@ function initializeContributions() {
 async function updateMembersList() {
   try {
     const members = await loadData('members');
-    const search = document.querySelector('#members-search')?.value.toLowerCase() || '';
-    const list = document.querySelector('#members-list');
-    if (!list) return;
+    const list = document.querySelector('#edit-members-list');
+    if (!list) {
+      console.error('Élément #edit-members-list introuvable');
+      alert('Erreur : conteneur de la liste des membres introuvable');
+      return;
+    }
 
     list.innerHTML = members
-      .filter(m => `${m.firstname} ${m.lastname} ${m.code}`.toLowerCase().includes(search))
       .map(m => `
         <div class="member-card">
-          <img src="${m.photo || 'assets/images/default-photo.png'}" alt="${m.firstname} ${m.lastname}" class="member-photo">
-          <div>
-            <p><strong>${m.firstname} ${m.lastname}</strong></p>
-            <p><small>${m.code} • ${m.role}</small></p>
-          </div>
+          <img src="https://via.placeholder.com/150" alt="${m.firstname} ${m.lastname}" class="member-photo">
+          <p><strong>${m.firstname} ${m.lastname}</strong></p>
+          <p><small>${m.code} • ${m.role}</small></p>
+          <button class="cta-button" onclick="editMember('${m.id}')">Modifier</button>
+          <button class="cta-button danger" onclick="deleteMember('${m.id}', '${m.firstname} ${m.lastname}')">Supprimer</button>
         </div>
-      `).join('');
+      `).join('') || '<p>Aucun membre trouvé</p>';
 
-    // Supprimer tout écouteur d'événements existant sur .member-card
-    const memberCards = document.querySelectorAll('.member-card');
-    memberCards.forEach(card => {
-      card.removeEventListener('click', showMemberDetail); // Supprime tout écouteur précédent
-      card.style.cursor = 'default'; // Indique visuellement que le clic n'est pas interactif
-    });
+    // Réinitialiser l'affichage au cas où le formulaire de suppression était visible
+    const deleteForm = document.querySelector('#delete-member-form');
+    const addForm = document.querySelector('#add-member-form');
+    const title = document.querySelector('#admin-members h3');
+    if (deleteForm) deleteForm.style.display = 'none';
+    if (addForm) addForm.style.display = 'block';
+    if (title) title.textContent = 'Modifier/Supprimer un Membre';
   } catch (error) {
     console.error('Erreur updateMembersList:', error);
+    alert('Erreur lors du chargement de la liste des membres');
   }
 }
 
@@ -574,6 +578,7 @@ async function deleteMember(memberId, memberName) {
     membersList.style.display = 'none';
     if (addForm) addForm.style.display = 'none';
     deleteForm.style.display = 'block';
+    document.querySelector('#delete-member-code').value = ''; // Réinitialiser le champ
 
     // Mettre à jour le titre pour indiquer quel membre est supprimé
     const title = document.querySelector('#admin-members h3');
@@ -602,6 +607,12 @@ async function confirmDeleteMember(memberId, memberName) {
     const presidentCodes = codesDoc.exists ? codesDoc.data() : { memberDeletionCode: '0000' };
     const presidentInput = document.querySelector('#delete-member-code')?.value.trim();
 
+    if (!presidentInput) {
+      console.log('Code président manquant');
+      alert('Veuillez entrer le code président');
+      return;
+    }
+
     if (presidentInput !== presidentCodes.memberDeletionCode) {
       console.log('Code président incorrect:', presidentInput);
       alert('Code président incorrect');
@@ -613,6 +624,16 @@ async function confirmDeleteMember(memberId, memberName) {
     showPage('admin-members');
     console.log('Membre supprimé:', memberName);
     alert('Membre supprimé avec succès');
+
+    // Réinitialiser l'affichage
+    const membersList = document.querySelector('#edit-members-list');
+    const addForm = document.querySelector('#add-member-form');
+    const deleteForm = document.querySelector('#delete-member-form');
+    const title = document.querySelector('#admin-members h3');
+    if (membersList) membersList.style.display = 'block';
+    if (addForm) addForm.style.display = 'block';
+    if (deleteForm) deleteForm.style.display = 'none';
+    if (title) title.textContent = 'Modifier/Supprimer un Membre';
   } catch (error) {
     console.error('Erreur confirmDeleteMember:', error);
     alert('Erreur lors de la suppression du membre');

@@ -717,6 +717,7 @@ async function updateAllMemberLists() {
   ]);
 }
 
+// Remplacer la fonction showMemberDetail
 async function showMemberDetail(code) {
   try {
     const members = await loadData('members');
@@ -732,27 +733,70 @@ async function showMemberDetail(code) {
     if (personalContent && personalLogin) {
       personalLogin.style.display = 'none';
       personalContent.style.display = 'block';
-      document.querySelector('#personal-title').textContent = `Espace de ${member.firstname} ${member.lastname}`;
+      document.querySelector('#personal-title').textContent = `${member.firstname} ${member.lastname}`;
+
+      // Générer les informations personnelles avec la structure .info-card
       document.querySelector('#personal-info').innerHTML = `
-        <p><strong>Code:</strong> ${member.code}</p>
-        <p><strong>Nom:</strong> ${member.firstname} ${member.lastname}</p>
-        <p><strong>Rôle:</strong> ${member.role}</p>
-        <p><strong>Statut:</strong> ${member.status}</p>
-        ${member.email ? `<p><strong>Email:</strong> ${member.email}</p>` : ''}
-        ${member.phone ? `<p><strong>Téléphone:</strong> ${member.phone}</p>` : ''}
+        <div class="info-card"><label>Code</label><span>${member.code}</span></div>
+        <div class="info-card"><label>Nom</label><span>${member.firstname} ${member.lastname}</span></div>
+        <div class="info-card"><label>Rôle</label><span>${member.role}</span></div>
+        <div class="info-card"><label>Statut</label><span>${member.status}</span></div>
+        ${member.email ? `<div class="info-card"><label>Email</label><span>${member.email}</span></div>` : ''}
+        ${member.phone ? `<div class="info-card"><label>Téléphone</label><span>${member.phone}</span></div>` : ''}
       `;
+
+      // Générer les cotisations avec la structure .year-grid, .month, et .global-cotisations
       const contributions = await loadData('contributions');
       document.querySelector('#personal-contributions').innerHTML = `
-        <p><strong>Cotisations Mensuelles:</strong></p>
-        ${Object.entries(member.contributions.Mensuelle).map(([year, paidMonths]) => `
-          <p>${year}: ${paidMonths.map((paid, i) => `${paid ? '✅' : '❌'} ${months[i]}`).join(', ')}</p>
-        `).join('')}
-        <p><strong>Cotisations Globales:</strong></p>
-        ${contributions.map(c => `
-          <p>${c.name} (${c.amount} FCFA): ${member.contributions.globalContributions?.[c.name]?.paid ? '✅ Payé' : '❌ Non payé'}</p>
-        `).join('') || '<p>Aucune cotisation globale</p>'}
+        <h2>Mes Cotisations</h2>
+        <div class="cotisations-section">
+          ${Object.entries(member.contributions.Mensuelle).map(([year, paidMonths]) => `
+            <h3>${year}</h3>
+            <div class="year-grid">
+              ${paidMonths.map((paid, i) => `
+                <div class="month ${paid ? 'paid' : 'unpaid'}">${months[i]}</div>
+              `).join('')}
+            </div>
+          `).join('')}
+          <div class="global-cotisations">
+            <h3>Cotisations Globales</h3>
+            ${contributions.map(c => `
+              <p>${c.name} (${c.amount} FCFA)<span>${member.contributions.globalContributions?.[c.name]?.paid ? '✔️' : '✖️'}</span></p>
+            `).join('') || '<p>Aucune cotisation globale</p>'}
+          </div>
+          <div class="payment-methods">
+            <button class="payment-btn" onclick="payViaWave()">Payer via Wave</button>
+            <button class="payment-btn" onclick="payViaOrangeMoney()">Payer via Orange Money</button>
+          </div>
+        </div>
+        <div class="suggestions-section">
+          <h2>Mes Suggestions</h2>
+          <form id="suggestion-form">
+            <textarea id="suggestion-text" placeholder="Votre suggestion..." required></textarea>
+            <button type="submit">Envoyer</button>
+          </form>
+        </div>
       `;
     }
+
+    // Réattacher l'écouteur d'événements pour le formulaire de suggestions
+    document.querySelector('#suggestion-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const suggestionData = {
+        text: document.querySelector('#suggestion-text').value.trim(),
+        memberCode: currentUser?.code || 'Anonyme',
+        createdAt: new Date().toISOString()
+      };
+
+      try {
+        await saveData('suggestions', suggestionData);
+        document.querySelector('#suggestion-form').reset();
+        alert('Suggestion envoyée avec succès');
+      } catch (error) {
+        console.error('Erreur addSuggestion:', error);
+        alert('Erreur lors de l\'envoi de la suggestion');
+      }
+    });
   } catch (error) {
     console.error('Erreur showMemberDetail:', error);
     alert('Erreur lors de l\'affichage des détails du membre');
@@ -1825,14 +1869,22 @@ document.querySelector('#personal-login-form')?.addEventListener('submit', async
   }
 });
 
+// Remplacer la fonction updatePersonalPage
 function updatePersonalPage() {
+  const personalContent = document.querySelector('#personal-content');
+  const personalLogin = document.querySelector('#personal-login');
+  if (!personalContent || !personalLogin) {
+    console.error('Éléments #personal-content ou #personal-login introuvables');
+    return;
+  }
+
   if (!currentUser) {
-    const personalContent = document.querySelector('#personal-content');
-    const personalLogin = document.querySelector('#personal-login');
-    if (personalContent && personalLogin) {
-      personalContent.style.display = 'none';
-      personalLogin.style.display = 'block';
-    }
+    personalContent.style.display = 'none';
+    personalLogin.style.display = 'block';
+  } else {
+    personalLogin.style.display = 'none';
+    personalContent.style.display = 'block';
+    showMemberDetail(currentUser.code);
   }
 }
 

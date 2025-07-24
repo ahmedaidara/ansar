@@ -26,13 +26,23 @@ body {
 
 .header {
   position: relative;
-  height: 200px;
-  background-size: cover;
+  height: 200px; /* Hauteur fixe (ajustez selon vos besoins) */
+  background-size: cover !important;
   background-position: center;
   background-repeat: no-repeat;
   margin: 0;
   padding: 0;
-  width: 100vw;
+  width: 100vw; /* Prend toute la largeur de l'écran */
+  left: 50%; /* Centrage */
+  transform: translateX(-50%); /* Compensation pour le centrage */
+  overflow: hidden; /* Cache tout débordement */
+  border: none !important; /* Supprime toutes les bordures */
+}
+
+@media (max-width: 600px) {
+  .header {
+    height: 150px; /* Réduit la hauteur sur mobile */
+  }
 }
 
 .header-content {
@@ -94,19 +104,23 @@ body {
 }
 
 .image-card {
-  width: 100%;
-  max-width: 300px;
-  height: 200px;
+  width: 95%; /* Prend 90% de la largeur parente (laisse 5% de marge de chaque côté) */
+  max-width: 300px !importan; /* Largeur maximale (ajustable) */
+  height: 300px !important; /* Hauteur fixe = largeur pour un carré parfait */
+  margin: 20px auto; /* Espacement vertical + centrage horizontal */
   border: 2px solid #000;
   border-radius: 15px;
   overflow: hidden;
-  margin: 10px auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: var(--secondary-color); /* Fond uni si l'image ne couvre pas tout */
 }
 
 .image-card img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: cover; /* Couvre tout l'espace sans déformation */
 }
 
 .association-title {
@@ -114,13 +128,15 @@ body {
   align-items: center;
   justify-content: center;
   padding: 10px;
-  background: var(--secondary-color);
+  background: var(--primary-color); /* Fond #073332, comme Boîte de réception */
+  border: 2px solid var(--accent-color); /* Contour jaune #9b9c28 */
   border-radius: 10px;
   margin: 10px;
   font-size: 20px;
   font-weight: bold;
   color: white;
   width: calc(100% - 40px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Ombre comme Boîte de réception */
 }
 
 .grid {
@@ -142,6 +158,10 @@ body {
   cursor: pointer;
   font-family: 'Open Sans', sans-serif;
   color: white;
+    width: calc(100% - 40px);
+    margin: 10px;
+
+
 }
 
 .item-text {
@@ -168,139 +188,140 @@ main {
 }
 
 #personal {
-  font-family: 'Times New Roman', Times, serif;
+  font-family: 'Open Sans', sans-serif !important;
+}
+
+/* Styles spécifiques pour la page personnelle */
+#personal .main {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background-color: var(--bg-color);
 }
 
 #personal .top-section {
-  height: 5cm;
-  background-color: #0ba561;
+  height: 250px;
+  background-color: var(--accent-color); /* Section verte */
   position: relative;
+  border-bottom: 3px solid var(--secondary-color); /* Contour inférieur */
 }
 
 #personal .profile-container {
   position: absolute;
-  bottom: -130px;
-  left: 50%;
-  transform: translateX(-50%);
+  bottom: -155px !important; /* Forcé pour centrer l'icône */
+  left: 50% !important;
+  transform: translateX(-50%) !important;
   text-align: center;
+  z-index: 10 !important; /* Assure que l'icône est au-dessus */
 }
 
 #personal .profile-icon {
-  width: 140px;
-  height: 140px;
+  width: 150px; /* Changé de 120px */
+  height: 150px; /* Changé de 120px */
   border-radius: 50%;
-  border: 5px solid var(--secondary-color);
+  border: 4px solid var(--secondary-color);
   background-color: white;
   display: flex;
   justify-content: center;
   align-items: center;
   margin: 0 auto;
-  overflow: hidden;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 #personal .profile-icon svg {
-  width: 84px;
-  height: 84px;
+  width: 100px; /* Changé de 80px */
+  height: 100px; /* Changé de 80px */
 }
 
 #personal .user-name {
-  color: #FFFFFF;
-  text-align: center;
-  font-size: 2rem;
+  color: var(--text-color);
+  font-size: 1.8rem;
   font-weight: bold;
   margin-top: 10px;
-  margin-bottom: 10px;
+  text-align: center;
 }
 
 #personal .bottom-section {
-  padding-top: 120px;
-  background-color: var(--secondary-color);
   flex: 1;
+  background-color: transparent !important;
+  padding-top: 125px !important; /* Forcé pour aligner la frontière */
 }
 
 #personal .container {
-  max-width: 850px;
+  max-width: 900px;
   margin: 0 auto;
+  padding: 0 15px;
 }
 
 #personal h1 {
-  color: #1daf63;
-  margin-bottom: 2px;
+  color: var(--accent-color);
+  font-size: 2rem; /* Changé de 1.6rem */
   text-align: center;
-  font-size: 1.5rem;
+  margin-bottom: 15px;
 }
 
 #personal h2 {
-  color: #1daf63;
-  margin-bottom: 2px;
+  color: var(--accent-color);
+  font-size: 1.6rem; /* Changé de 1.3rem */
   text-align: center;
+  margin-bottom: 10px;
 }
 
 #personal .section {
-  background-color: #2a4d45;
-  border-radius: 15px;
-  padding: 10px;
-  margin: 0 10px 15px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  background-color: #2a4d45; /* Fond légèrement plus clair que secondary-color */
+  border: 2px solid var(--accent-color); /* Contour visible autour des sections */
+  border-radius: 10px;
+  padding: 15px;
+  margin: 0 10px 20px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
 }
 
 #personal .info-section {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 10px;
+  padding: 10px;
 }
 
 #personal .info-card {
-  background-color: #3a5f56;
-  padding: 10px;
+  background-color: #3a5f56; /* Fond des cartes d'info */
+  border: 2px solid var(--accent-color); /* Contour visible autour des infos */
   border-radius: 8px;
+  padding: 10px;
   text-align: center;
-  transition: transform 0.3s ease;
 }
 
-#personal .info-card:hover {
-  transform: translateY(-3px);
+#personal .info-card p {
+  margin: 5px 0;
+  font-size: 0.9rem;
+  color: var(--text-color);
 }
 
-#personal .info-card label {
+#personal .info-card strong {
+  color: #a8e6cf; /* Couleur claire pour les labels */
   display: block;
   font-size: 0.85rem;
-  color: #a8e6cf;
-  margin-bottom: 5px;
-}
-
-#personal .info-card span {
-  font-size: 1rem;
-  font-weight: bold;
-  color: #FFFFFF;
 }
 
 #personal .cotisations-section {
   margin-bottom: 20px;
 }
 
-#personal .cotisations-section h3 {
-  color: #FFFFFF;
-}
-
 #personal .year-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
   gap: 8px;
-  margin-bottom: 15px;
+  margin-top: 10px;
 }
 
 #personal .month {
   background-color: #3a5f56;
-  padding: 8px;
+  border: 2px solid var(--accent-color); /* Contour visible autour des mois */
   border-radius: 6px;
+  padding: 8px;
   text-align: center;
-  font-size: 0.8rem;
-  color: #FFFFFF;
+  font-size: 0.85rem;
+  color: var(--text-color);
 }
 
 #personal .month.paid::after {
@@ -317,132 +338,151 @@ main {
 
 #personal .global-cotisations {
   background-color: #3a5f56;
-  padding: 15px;
+  border: 2px solid var(--accent-color); /* Contour autour des cotisations globales */
   border-radius: 8px;
+  padding: 10px;
   margin-top: 15px;
-}
-
-#personal .global-cotisations h3 {
-  color: #FFFFFF;
 }
 
 #personal .global-cotisations p {
   display: flex;
   justify-content: space-between;
-  font-size: 1rem;
-  margin-bottom: 8px;
-  color: #FFFFFF;
+  font-size: 0.9rem;
+  margin: 5px 0;
+  color: var(--text-color);
 }
 
 #personal .payment-methods {
   display: flex;
-  gap: 15px;
   justify-content: center;
-  margin-top: 15px;
-  margin-bottom: 20px;
+  gap: 15px;
+  margin: 20px 0;
 }
 
 #personal .payment-btn {
   background-color: #a8e6cf;
-  color: #1a3c34;
-  padding: 10px 25px;
-  border: none;
+  color: var(--primary-color);
+  padding: 10px 20px;
+  border: 2px solid var(--accent-color); /* Contour autour des boutons */
   border-radius: 20px;
   font-size: 0.9rem;
   font-weight: bold;
   cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.3s ease;
+  transition: background-color 0.2s ease;
 }
 
 #personal .payment-btn:hover {
   background-color: #8cc7a1;
-  transform: scale(1.05);
+}
+
+#personal .suggestions-section {
+  margin-bottom: 20px;
 }
 
 #personal .suggestions-section textarea {
-  width: 100%;
+  width: calc(100% - 30px);
   padding: 10px;
+  border: 2px solid var(--accent-color); /* Contour autour du textarea */
   border-radius: 8px;
-  border: none;
-  background-color: var(--secondary-color);
-  color: #e0e0e0;
+  background-color: #3a5f56;
+  color: var(--text-color);
   resize: vertical;
-  margin-top: 10px;
-  margin-bottom: 10px;
   font-size: 0.9rem;
+  margin-bottom: 10px;
+  
 }
 
 #personal .suggestions-section button {
   background-color: #a8e6cf;
-  color: #1a3c34;
-  padding: 10px 25px;
-  border: none;
+  color: var(--primary-color);
+  padding: 10px 20px;
+  border: 2px solid var(--accent-color); /* Contour autour du bouton */
   border-radius: 20px;
   font-size: 0.9rem;
   font-weight: bold;
   cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.3s ease;
+  transition: background-color 0.2s ease;
 }
 
 #personal .suggestions-section button:hover {
   background-color: #8cc7a1;
-  transform: scale(1.05);
 }
 
 #personal .logout-btn {
   display: block;
-  margin: 30px auto 20px;
+  margin: 30px auto;
   background-color: #ff6b6b;
-  color: #fff;
-  padding: 10px 25px;
-  border: none;
+  color: var(--text-color);
+  padding: 10px 20px;
+  border: 2px solid var(--accent-color); /* Contour autour du bouton de déconnexion */
   border-radius: 20px;
   font-size: 0.9rem;
   font-weight: bold;
   cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.3s ease;
+  transition: background-color 0.2s ease;
 }
 
 #personal .logout-btn:hover {
   background-color: #e55a5a;
-  transform: scale(1.05);
 }
 
-#personal .cta-button {
-  background-color: #a8e6cf;
-  color: #1a3c34;
-  padding: 10px 25px;
-  border: none;
-  border-radius: 20px;
-  font-size: 0.9rem;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.3s ease;
+#personal .user-role {
+  color: var(--accent-color); /* Même couleur que les titres pour cohérence */
+  font-size: 1.2rem;
+  margin: 5px 0 20px;
+  text-align: center;
 }
 
-#personal .cta-button:hover {
-  background-color: #8cc7a1;
-  transform: scale(1.05);
+@media (max-width: 600px) {
+  #personal .top-section {
+    height: 200px;
+  }
+
+  #personal .profile-icon {
+  width: 120px; /* Réduit pour mobile */
+  height: 120px;
 }
 
-#personal input,
-#personal textarea,
-#personal select {
-  padding: 0.8rem;
-  background: var(--secondary-color);
-  color: white;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  font-size: 1rem;
+#personal .profile-icon svg {
+  width: 80px;
+  height: 80px;
 }
 
-#personal label {
-  color: #a8e6cf;
-  font-size: 0.85rem;
-  margin-bottom: 5px;
-  display: block;
+#personal .profile-container {
+  bottom: -110px; /* Ajusté pour mobile */
 }
 
+  #personal .user-name {
+    font-size: 1.4rem;
+  }
+
+  #personal .info-section {
+    grid-template-columns: 1fr;
+  }
+
+  #personal .year-grid {
+    grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+  }
+
+  #personal .section {
+    margin: 0 5px 15px;
+    padding: 10px;
+  }
+
+  #personal h1 {
+    font-size: 1.8rem;
+  }
+
+  #personal h2 {
+    font-size: 1.4rem;
+  }
+  /* Ligne à ajouter */
+  #personal .bottom-section {
+    padding-top: 90px; /* Ajouté pour aligner la frontière au centre de l'icône sur mobile */
+  }
+}
+
+/* Styles pour les autres sections (inchangés) */
 .bottom-nav {
   position: fixed;
   bottom: 0;
@@ -456,8 +496,9 @@ main {
 }
 
 .nav-item {
-  background: var(--secondary-color);
-  border: none;
+  background: transparent !important; /* Supprime le fond */
+  border: none !important; /* Supprime les bordures */
+  box-shadow: none !important; /* Supprime les ombres éventuelles */
   cursor: pointer;
   font-size: 12px;
   display: flex;
@@ -478,6 +519,7 @@ main {
   color: white;
 }
 
+/* Styles pour le bouton du chatbot */
 .chatbot-button {
   position: fixed;
   bottom: 90px;
@@ -488,85 +530,302 @@ main {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   cursor: pointer;
   transition: transform 0.3s ease;
+  z-index: 1000; /* Assure que le bouton reste au-dessus */
+}
+
+/* Conteneur du champ secret */
+#secret-entry {
+  display: none;
+  position: relative; /* Position relative au conteneur parent */
+  width: 90%; /* Largeur réduite pour rester dans le cadre */
+  max-width: 1000px; /* Largeur maximale */
+  margin: 5px auto; /* Centrage horizontal */
+  padding: 15px;
+  background-color: var(--secondary-color);
+  border-radius: 8px;
+  box-sizing: border-box; /* Inclut padding dans le calcul de la largeur */
+  text-align: center;
+}
+
+/* Quand il est visible */
+#secret-entry.visible {
+  display: block;
+  animation: fadeIn 0.3s ease;
+}
+
+/* Champ de saisie */
+#secret-password {
+  width: calc(100% - 30px); /* Largeur adaptative avec padding */
+  padding: 12px 15px;
+  margin: 0 auto 10px; /* Centrage */
+  background-color: var(--bg-color);
+  border: 2px solid var(--accent-color);
+  border-radius: 5px;
+  color: white;
+  font-size: 16px;
+  display: block; /* Pour que margin auto fonctionne */
+}
+
+/* Bouton de validation */
+#secret-entry button {
+  background-color: var(--accent-color);
+  color: var(--primary-color);
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .chatbot-button:hover {
   transform: scale(1.1);
 }
 
+/* Styles pour la fenêtre du chatbot */
+/* Styles pour la fenêtre du chatbot */
+/* Styles pour la fenêtre du chatbot */
 .chatbot-container {
   position: fixed;
-  bottom: 140px;
-  right: 20px;
-  width: 300px;
+  bottom: 90px; /* Décalé en bas */
+  right: 20px; /* Décalé à droite */
+  width: 80vw; /* 80% de la largeur de l'écran */
+  height: 80vh; /* 80% de la hauteur de l'écran */
   background: url('assets/images/chatbot-bg.jpg') no-repeat center center;
-  background-size: contain;
-  border: 1px solid var(--secondary-color);
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  z-index: 1000;
+  background-size: cover; /* L'image couvre tout l'espace sans zoom ni coupure */
+  border: 2px solid var(--accent-color); /* Contour jaune #9b9c28 */
+  border-radius: 10px; /* Coins arrondis */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Ombre légère */
+  z-index: 1000; /* Au-dessus du contenu */
+  display: none; /* Caché par défaut */
+  overflow: hidden; /* Empêche le débordement global */
+  display: flex; /* Utilise flexbox pour organiser les enfants */
+  flex-direction: column; /* Organise les enfants verticalement */
+}
+/* Assure que la fenêtre est visible quand ouverte */
+.chatbot-container.active {
+  display: block;
 }
 
+/* Styles pour l'en-tête du chatbot */
 .chatbot-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.5rem;
+  padding: 1rem;
   background: var(--primary-color);
   color: white;
-  border-radius: 10px 10px 0 0;
+  border-bottom: 2px solid var(--accent-color); /* Bordure pour séparation */
 }
 
+/* Styles pour la zone des messages */
+
+
+/* Styles pour la zone des messages */
+/* Styles pour la zone des messages */
 .chatbot-messages {
-  max-height: 300px;
-  overflow-y: auto;
+  flex: 1; /* Prend tout l'espace disponible au-dessus des contrôles et du formulaire */
+  max-height: calc(80vh - 190px) !important; /* Ajuste pour l'en-tête (~50px), contrôles (~40px), et formulaire (~50px) */
+  overflow-y: auto; /* Défilement vertical pour les messages */
   padding: 1rem;
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(42, 77, 69, 0.9); /* Vert sombre #2a4d45 avec opacité */
 }
 
+* Styles pour les messages envoyés (utilisateur) */
+#chatbot-messages .chat-message.user {
+  background: #a8e6cf !important; /* Vert clair pour contraste */
+  color: #073332 !important; /* Texte sombre pour lisibilité */
+  margin-left: auto !important; /* Aligné à droite */
+  margin-right: 1rem !important; /* Marge à droite pour espacement */
+  border: 2px solid var(--primary-color) !important; /* Bordure #073332 */
+  border-radius: 12px 12px 0 12px !important; /* Coin inférieur droit non arrondi */
+  display: block !important; /* Forcer l'affichage en bloc */
+}
+
+/* Styles pour les messages reçus (bot) */
+.chat-message.bot {
+  align-self: flex-start;
+  background-color: #ffffff; /* Fond blanc */
+  border-color: #e5e5ea; /* Bordure grise */
+  color: #000; /* Texte noir */
+  border-top-left-radius: 5px; /* Coin gauche supérieur moins arrondi */
+}
+
+#chatbot-controls {
+  position: absolute;
+  bottom: 78px; /* Position au-dessus du formulaire */
+  left: 10px; /* Ajouté pour aligner à gauche */
+  right: auto; /* Annule le right: 0 précédent */
+  padding: 10px;
+background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  display: flex;
+  justify-content: flex-end;
+  z-index: 10;
+}
+
+
+
+.chat-message strong {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 0.8em;
+}
 .chatbot-message {
-  margin: 0.5rem 0;
-  padding: 0.5rem;
-  border-radius: 5px;
+  margin: 0.5rem 1rem !important; /* Marge autour de chaque message pour espacement */
+  padding: 0.8rem 1.2rem !important; /* Padding interne pour effet "bulle" */
+  border-radius: 12px !important; /* Coins arrondis pour effet palette */
+  font-size: 1rem !important;
+  line-height: 1.5 !important;
+  max-width: 70% !important; /* Limite la largeur pour éviter que les messages soient trop larges */
+  word-wrap: break-word !important; /* Gère les longs mots */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important; /* Ombre pour effet de bulle */
 }
 
+/* Styles pour les contrôles du chatbot (bouton Effacer) */
+.chatbot-controls {
+  padding: 0.5rem 1rem; /* Espacement interne */
+  background: rgba(42, 77, 69, 0.9); /* Même fond que le formulaire */
+  border-top: 2px solid var(--accent-color); /* Bordure pour séparation */
+  text-align: right; /* Bouton à droite */
+}
+
+/* Styles pour les messages envoyés */
 .sent {
-  background: var(--accent-color);
-  color: white;
-  text-align: right;
+  background: #a8e6cf !important; /* Vert clair pour meilleur contraste (au lieu de #9b9c28) */
+  color: #073332 !important; /* Texte sombre pour lisibilité */
+  margin-left: auto !important; /* Aligné à droite */
+  border: 2px solid var(--primary-color) !important; /* Bordure #073332 */
+  border-radius: 12px 12px 0 12px !important; /* Coin inférieur droit non arrondi pour style bulle */
 }
 
+/* Styles pour les messages reçus */
 .received {
-  background: var(--secondary-color);
-  color: white;
+  background: #3a5f56 !important; /* Vert moyen pour contraste (au lieu de #1f4a49) */
+  color: white !important; /* Texte blanc pour lisibilité */
+  margin-right: auto !important; /* Aligné à gauche */
+  border: 2px solid var(--accent-color) !important; /* Bordure jaune #9b9c28 */
+  border-radius: 12px 12px 12px 0 !important; /* Coin inférieur gauche non arrondi pour style bulle */
 }
 
+
+/* Styles pour le formulaire du chatbot */
+/* Styles pour le formulaire du chatbot */
+/* Styles pour le formulaire du chatbot */
 #chatbot-form {
   display: flex;
-  padding: 0.5rem;
-  background: rgba(255, 255, 255, 0.8);
+  padding: 1rem;
+  background: rgba(42, 77, 69, 0.9); /* Vert sombre #2a4d45 avec opacité */
+  position: absolute; /* Fixe le formulaire en bas */
+  bottom: 0; /* Collé au bas de la fenêtre */
+  left: 0; /* Aligné à gauche */
+  right: 0; /* S'étend sur toute la largeur */
+  border-top: 2px solid var(--accent-color); /* Bordure pour séparation */
 }
+
 
 #chatbot-input {
   flex-grow: 1;
   margin-right: 0.5rem;
   background: var(--secondary-color);
   color: white;
-  border: 1px solid #ccc;
+  border: 2px solid var(--accent-color); /* Bordure cohérente */
+  border-radius: 8px;
+  padding: 0.8rem;
+  font-size: 1rem;
 }
+
 
 #secret-entry input {
   background: var(--secondary-color);
   color: white;
-  border: 1px solid #ccc;
+  border: 2px solid var(--accent-color); /* Bordure cohérente */
+  border-radius: 8px;
+  padding: 0.8rem;
+  font-size: 1rem;
 }
 
-form {
+#chatbot-form button, #secret-entry button {
+  background: var(--accent-color);
+  color: white;
+  padding: 0.8rem 1.2rem;
+  border: 2px solid var(--primary-color);
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.chat-message {
+  max-width: 80%;
+  padding: 10px 15px;
+  border-radius: 15px;
+  margin: 5px 0;
+  position: relative;
+  word-wrap: break-word;
+  border: 1px solid;
+}
+
+.chat-message.user {
+  align-self: flex-end;
+  background-color: #dcf8c6; /* Fond vert clair */
+  border-color: #b3e6a1; /* Bordure verte */
+  color: #000; /* Texte noir */
+  border-top-right-radius: 5px; /* Coin droit supérieur moins arrondi */
+}
+
+#chatbot-messages {
+  padding: 10px;
+  overflow-y: auto;
+  max-height: 300px;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  max-width: 400px;
-  margin: 0 auto;
+  gap: 10px;
+}
+
+#chatbot-form button:hover, #secret-entry button:hover {
+  background: #8cc7a1; /* Couleur au survol pour cohérence */
+}
+
+/* Styles pour le bouton de suppression de l'historique */
+.chatbot-controls {
+  background: #ff6b6b;
+  color: white;
+  padding: 0.8rem 1.2rem;
+  border: 2px solid var(--accent-color);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  margin: 0.5rem 1rem;
+}
+
+#chatbot-messages {
+  padding-bottom: 50px; /* Espace pour le bouton fixe */
+}
+
+.clear-history {
+  background: none !important;
+  color: var(--accent-color) !important;
+    margin-right: auto !important; /* Pousse le bouton à gauche */
+
+  border: none !important;
+  padding: 8px 15px !important;
+  border-radius: 5px !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+}
+
+
+.chatbot-controls .clear-history:hover {
+  background: #e55a5a;
 }
 
 input, textarea, select {
@@ -611,12 +870,26 @@ input, textarea, select {
 }
 
 .gallery-item {
-  flex: 0 0 auto;
-  max-width: 100%;
+  flex: 0 0 calc(33.333% - 15px); /* 3 colonnes avec espace */
+  max-width: calc(33.333% - 15px);
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center; /* Centre le contenu de chaque item */
+}
+
+#home-gallery.gallery-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center; /* Centre les éléments horizontalement */
+  gap: 15px;
+  margin: 0 auto;
+  padding: 0 15px;
+  max-width: 1200px;
 }
 
 .gallery-image {
-  max-width: 100%;
+  width: 100%;
+  max-width: 100%; /* Empêche les images de déborder */
   height: auto;
   border-radius: 8px;
   display: block;
@@ -718,39 +991,387 @@ canvas {
   .gallery-image {
     max-width: 90%;
   }
+}
 
-  #personal .section {
-    padding: 8px;
-    margin: 0 5px 10px;
+#personal .info-section p {
+  background-color: #3a5f56;
+  border: 2px solid var(--accent-color);
+  border-radius: 8px;
+  padding: 10px;
+  margin: 5px 0;
+  font-size: 0.9rem;
+  color: var(--text-color);
+  text-align: left;
+}
+
+#personal .cotisations-section p {
+  background-color: #3a5f56;
+  border: 2px solid var(--accent-color);
+  border-radius: 8px;
+  padding: 10px;
+  margin: 8px 0;
+  font-size: 0.9rem;
+  color: var(--text-color);
+}
+
+
+/* Styles pour la page de connexion personnelle */
+#personal-login .main {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-color); /* #073332 */
+  margin: 0 !important; /* Supprime toute marge */
+  padding: 0 !important; /* Supprime tout padding */
+  width: 100vw; /* Couvre toute la largeur */
+}
+
+#personal-login .top-section {
+  height: 250px;
+  background-color: var(--accent-color); /* Vert #9b9c28 */
+  position: relative;
+  border-bottom: 3px solid var(--secondary-color); /* Contour inférieur */
+}
+
+#personal-login .profile-container {
+  position: absolute;
+  bottom: -170px !important; /* Forcé, même valeur que #personal-content */
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  text-align: center;
+  z-index: 10 !important;
+}
+
+
+
+#personal-login .profile-icon {
+  width: 150px !important;
+  height: 150px !important;
+  border-radius: 50%;
+  border: 4px solid var(--secondary-color); /* Contour bleu #1f4a49 */
+  background-color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+#personal-login .profile-icon svg {
+  width: 100px;
+  height: 100px;
+}
+
+#personal-login .bottom-section {
+  flex: 1;
+  background-color: transparent !important; /* Bleu #1f4a49 */
+  padding-top: 140px !important; /* Forcé, même valeur que #personal-content */
+}
+
+#personal-login .container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 15px;
+}
+
+#personal-login .login-section {
+  background-color: #2a4d45; /* Fond comme #personal .section */
+  border: 2px solid var(--accent-color); /* Contour vert #9b9c28 */
+  border-radius: 10px;
+  padding: 15px;
+  margin: 0 10px 20px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+}
+
+#personal-login .login-section label {
+  color: var(--text-color);
+  font-size: 1rem;
+  margin-bottom: 5px;
+  display: block;
+}
+
+#personal-login .login-section input {
+  width: calc(100% - 30px); /* Compense padding */
+  margin: 5px 15px 10px 15px;
+  box-sizing: border-box;
+}
+
+#personal-login .login-section button {
+  background-color: #a8e6cf;
+  color: var(--primary-color);
+  padding: 10px 20px;
+  border: 2px solid var(--accent-color); /* Contour vert */
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  width: auto;
+  margin: 10px auto;
+  display: block;
+}
+
+#personal-login .login-section button:hover {
+  background-color: #8cc7a1;
+}
+
+#personal-login h2 {
+  font-family: 'Open Sans', sans-serif !important;
+  color: var(--accent-color);
+  font-size: 1.6rem;
+  text-align: center;
+  margin-top: 20px; /* Ajoute espace au-dessus du titre */
+  margin-bottom: 30px; /* Augmente pour plus d'espace sous le titre */
+}
+
+/* Responsive pour mobile */
+@media (max-width: 600px) {
+#personal-login .top-section {
+  height: 200px;
+  width: 100vw; /* Couvre toute la largeur */
+  margin: 0 !important;
+}
+
+  #personal-login .profile-icon {
+    width: 120px;
+    height: 120px;
   }
 
-  #personal .info-section {
-    grid-template-columns: 1fr;
+  #personal-login .profile-icon svg {
+    width: 80px;
+    height: 80px;
   }
 
-  #personal .year-grid {
-    grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+  #personal-login .profile-container {
+    bottom: -108px !important; /* Forcé pour mobile */
   }
 
-  #personal .profile-icon {
-    width: 112px;
-    height: 112px;
+  #personal-login .bottom-section {
+    padding-top: 120px !important; /* Forcé pour mobile */
   }
 
-  #personal .profile-icon svg {
-    width: 67px;
-    height: 67px;
+  #personal-login .login-section {
+    margin: 0 5px 15px;
+    padding: 10px;
   }
 
-  #personal .profile-container {
-    bottom: -105px;
+  #personal-login .login-section input {
+    width: calc(100% - 20px); /* Compense padding mobile */
+    margin: 5px 10px 10px 10px;
   }
 
-  #personal h1 {
-    font-size: 1.2rem;
+#personal-login h2 {
+  font-family: 'Open Sans', sans-serif !important;
+  font-size: 1.4rem;
+  margin-top: 15px; /* Espace au-dessus pour mobile */
+  margin-bottom: 25px; /* Espace en dessous pour mobile */
+}
+}
+
+.gallery-title {
+  text-align: center;
+  width: 100%;
+  margin: 20px 0 10px;
+  font-size: 1.5rem;
+  color: var(--accent-color);
+}
+
+@media (max-width: 768px) {
+  .gallery-item {
+    flex: 0 0 calc(50% - 15px); /* 2 colonnes sur tablette */
+    max-width: calc(50% - 15px);
+  }
+}
+
+@media (max-width: 480px) {
+  .gallery-item {
+    flex: 0 0 100%; /* 1 colonne sur mobile */
+    max-width: 100%;
+  }
+}
+
+/* Styles pour la page des messages */
+ /* Styles pour la page des messages */
+/* Styles pour la page des messages */
+#messages.page {
+  background-color: var(--bg-color); /* Fond #073332 */
+  min-height: calc(100vh - 80px);
+  padding: 10px 5px; /* Réduit l'espacement latéral */
+
+}
+
+.messages-header-container {
+max-width: 100%; /* Augmentez ce pourcentage */
+  margin: 20px auto 10px; /* Réduisez les marges latérales */
+  padding: 0 5px; /* Réduisez le padding */
+  background: var(--primary-color); /* Fond #073332 */
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.9);
+}
+
+.messages-header {
+  text-align: center;
+  padding: 15px;
+  font-size: 20px;
+  font-weight: bold;
+  color: var(--text-color); /* Texte #ffffff */
+}
+
+.messages-list-container {
+  max-width: 92%; /* Pleine largeur */
+  margin: 0 auto;
+  padding: 0;
+}
+.messages-list .message-card {
+  padding: 15px;
+  border-radius: 8px;
+  margin: 0 auto; /* Centrage */
+background-color: #002e2d; /* Nouveau fond gris foncé pour chaque message */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Ombre légère pour effet de bloc */
+    width: 100%; /* Prend toute la largeur disponible */
+
+}
+
+.messages-list .message-card .title {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+  color: #fbffb7 !important; /* Texte #ffffff */
+}
+
+.messages-list .message-card .title img {
+  width: 40px; /* Taille fixe d'environ 1 cm */
+  height: 40px;
+  border-radius: 50%; /* Forme ronde */
+  margin-right: 8px;
+  object-fit: cover; /* S'assure que l'image est bien ajustée */
+}
+
+.messages-list .message-card .message {
+  font-size: 14px;
+  line-height: 1.4;
+  margin-bottom: 10px;
+  color: #ffffff !important; /* Texte #ffffff */
+  font-family: 'Montserrat', Arial, sans-serif;
+}
+
+.messages-list .message-card .separator {
+  border-top: 1px solid var(--accent-color); /* Trait horizontal #9b9c28 */
+  margin: 10px 0;
+}
+
+.messages-list .message-card .date {
+  font-size: 16px !important; /* Même taille que le titre */
+  color: #d8d9c2 !important; /* Gris clair pour la date */
+  text-align: right !important;
+  margin-top: 0;
+}
+
+/* Responsive pour mobile */
+@media (max-width: 600px) {
+  .messages-header-container {
+    margin: 10px;
+    padding: 10px;
   }
 
-  #personal .user-name {
-    font-size: 1.6rem;
+  .messages-header {
+    font-size: 18px;
+    padding: 10px;
   }
+
+  .messages-list-container {
+    margin: 0 5px;
+  }
+
+  .messages-list .message-card {
+    margin: 10px 5px; /* Espacement réduit pour mobile */
+    padding: 10px;
+  }
+
+  .messages-list .message-card .title {
+    font-size: 14px;
+  }
+
+  .messages-list .message-card .title img {
+    width: 32px; /* Légèrement plus petit sur mobile */
+    height: 32px;
+  }
+
+  .messages-list .message-card .message {
+    font-size: 13px;
+  }
+
+  .messages-list .message-card .date {
+    font-size: 14px !important; /* Même taille que le titre sur mobile */
+  }
+
+  .messages-list .message-card .separator {
+    margin: 8px 0; /* Ajustement pour mobile */
+  }
+}
+
+#members h2 {
+  max-width: 90%; /* Aligné avec .messages-header-container */
+  margin: 20px auto;
+  background: var(--primary-color); /* Fond #073332 */
+  border: 2px solid var(--accent-color); /* Contour jaune #9b9c28 */
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Ombre comme Boîte de réception */
+  text-align: center;
+  padding: 15px;
+  font-size: 20px;
+  font-weight: bold;
+  color: var(--text-color); /* Texte #ffffff */
+}
+
+.event-countdown {
+  font-size: 1.2em;
+  font-weight: bold;
+  color: var(--text-color);
+  text-align: center;
+  margin: 20px auto;
+  padding: 15px;
+  background-color: var(--primary-color);
+  border: 2px solid var(--accent-color);
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  max-width: 90%;
+  font-family: 'Open Sans', sans-serif;
+}
+
+/* Style pour la bibliothèque */
+.book-item {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 15px;
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.book-cover {
+  cursor: pointer;
+  width: 120px;
+  height: 160px;
+  overflow: hidden;
+  border-radius: 4px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  transition: transform 0.3s;
+}
+
+.book-cover:hover {
+  transform: scale(1.05);
+}
+
+.book-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.book-info {
+  flex: 1;
 }

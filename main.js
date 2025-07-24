@@ -41,6 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Charger les données initiales
   updateMessagePopups();
   checkAutoMessages();
+  
 
   // Ajouter les écouteurs d'événements
   document.querySelector('#refresh-data')?.addEventListener('click', () => {
@@ -57,11 +58,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function loadData(collection) {
   try {
-    const snapshot = await db.collection(collection).get();
+    const snapshot = await firebase.firestore().collection(collection).get();
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   } catch (error) {
-    console.error(`Erreur loadData(${collection}):`, error);
-    return [];
+    console.error(`Erreur lors du chargement de ${collection}:`, error);
+    throw error;
   }
 }
 
@@ -167,16 +168,16 @@ function showPage(pageId) {
       case 'home':
         updateMessagePopups();
         updateHomeGallery();
+        updateEventCountdowns(); // Ajout pour initialiser le compte à rebours
         break;
       case 'settings':
         break;
-      case 'secret':
-        if (currentUser?.role === 'president' || currentUser?.role === 'secretaire' || currentUser?.role === 'admin') {
-          showTab('add-member');
-        } else {
-          showPage('home');
-        }
-        break;
+    case 'secret':
+      if (currentUser?.role !== 'admin') {
+        showPage('home');
+        return;
+      }
+      break;
       case 'admin-members':
         if (currentUser?.role === 'president' || currentUser?.role === 'secretaire' || currentUser?.role === 'admin') {
           updateEditMembersList();
@@ -184,11 +185,12 @@ function showPage(pageId) {
           showPage('home');
         }
         break;
-      case 'treasurer':
-        if (currentUser?.role !== 'tresorier') {
-          showPage('home');
-        }
-        break;
+    case 'treasurer':
+      if (currentUser?.role !== 'tresorier') {
+        showPage('home');
+        return;
+      }
+      break;
       case 'treasurer-monthly':
         updateTreasurerMonthlyList();
         break;
@@ -206,13 +208,12 @@ function showPage(pageId) {
           showPage('home');
         }
         break;
-      case 'secretary':
-        if (currentUser?.role === 'secretaire') {
-          showTab('secretary-files');
-        } else {
-          showPage('home');
-        }
-        break;
+    case 'secretary':
+      if (currentUser?.role !== 'secretaire') {
+        showPage('home');
+        return;
+      }
+      break;
       default:
         console.warn(`Page non reconnue : ${pageId}`);
         showPage('home');
@@ -337,8 +338,12 @@ function appendChatMessage(sender, message) {
 
   const messageElement = document.createElement('div');
   messageElement.className = sender === 'Vous' ? 'chat-message user' : 'chat-message bot';
-  messageElement.innerHTML = `<strong>${sender}:</strong> ${message}`;
+  
+  // Suppression du préfixe - affiche uniquement le message
+  messageElement.textContent = message; 
+  
   messages.appendChild(messageElement);
+  messages.scrollTop = messages.scrollHeight;
 }
 
 function clearChatHistory() {
@@ -349,87 +354,62 @@ function clearChatHistory() {
 }
 
 async function checkSecretPassword() {
-  const password = document.querySelector('#secret-password')?.value.trim();
-  const secretCodes = [
-    'ADMIN12301012000',
-    '00000000',
-    '11111111',
-    '22222222',
-    'JESUISMEMBRE66',
-    '33333333',
-    '44444444',
-    '55555555'
-  ];
-  const treasurerCodes = [
-    'ADMIN12301012000',
-    '00000000',
-    '11111111',
-    '22222222',
-    'JESUISTRESORIER444',
-    '66666666',
-    '77777777',
-    '88888888'
-  ];
-  const presidentCodes = [
-    'ADMIN12301012000',
-    '00000000',
-    '11111111',
-    '22222222',
-    'PRESIDENT000',
-    '99999999',
-    '11112222',
-    '33334444'
-  ];
-  const secretaryCodes = [
-    'ADMIN12301012000',
-    '00000000',
-    '11111111',
-    '22222222',
-    'SECRETAIRE000',
-    '55556666',
-    '77778888',
-    '99990000'
-  ];
-
   try {
-    const members = await loadData('members');
-    const adminMember = members.find(m => m.role === 'president' || m.role === 'secretaire');
-    const dynamicAdminCode = adminMember ? `ADMIN${adminMember.code}${adminMember.dob}` : null;
+    const password = document.querySelector('#secret-password')?.value.trim();
+    if (!password) {
+      appendChatMessage('Assistant ANSAR', 'Veuillez entrer un code valide.');
+      return;
+    }
 
-    if (password) {
-      if (secretCodes.includes(password) || (dynamicAdminCode && password === dynamicAdminCode)) {
-        currentUser = adminMember ? { code: adminMember.code, role: adminMember.role } : { code: 'anonymous', role: 'admin' };
-        showPage('secret');
-        clearChatHistory();
-      } else if (treasurerCodes.includes(password)) {
-        currentUser = { code: 'treasurer', role: 'tresorier' };
-        showPage('treasurer');
-        clearChatHistory();
-      } else if (presidentCodes.includes(password)) {
-        currentUser = { code: 'president', role: 'president' };
-        showPage('president');
-        clearChatHistory();
-      } else if (secretaryCodes.includes(password)) {
-        currentUser = { code: 'secretary', role: 'secretaire' };
-        showPage('secretary');
-        clearChatHistory();
-      } else {
-        appendChatMessage('Assistant ANSAR', 'Mot de passe incorrect.');
-      }
+    const accessCodes = await loadAccessCodes();
+    
+    if (password === accessCodes.presidentAccessCode || password === 'PRESIDENT000') {
+      currentUser = { role: 'president' };
+      showPage('president');
+      clearChatHistory();
+    }
+    else if (password === accessCodes.secretAccessCode) {
+      currentUser = { role: 'admin' };
+      showPage('secret');
+      clearChatHistory();
+    } 
+    else if (password === accessCodes.treasurerAccessCode) {
+      currentUser = { role: 'tresorier' };
+      showPage('treasurer');
+      clearChatHistory();
+    }
+    else if (password === accessCodes.secretaryAccessCode) {
+      currentUser = { role: 'secretaire' };
+      showPage('secretary');
+      clearChatHistory();
+    }
+    else {
+      appendChatMessage('Assistant ANSAR', 'Code incorrect. Accès refusé.');
     }
   } catch (error) {
     console.error('Erreur checkSecretPassword:', error);
-    appendChatMessage('Assistant ANSAR', 'Erreur lors de la vérification du mot de passe.');
+    appendChatMessage('Assistant ANSAR', 'Erreur système. Réessayez plus tard.');
   }
 }
 
 function getChatbotResponse(message) {
+  const trimmedMsg = message.trim().toUpperCase(); // Convertir en majuscules et supprimer les espaces
+
+  // Réponses pour les salutations
+  if (trimmedMsg === 'BONJOUR') return 'Bonjour ! Comment puis-je vous aider aujourd\'hui ?';
+  if (trimmedMsg === 'SALUT') return 'Salut ! Posez-moi une question ';
+
+  // Vérifier si c'est un mot-clé d'accès
+  if (['ADMIN', 'TRESORIER', 'SECRETAIRE', 'PRESIDENT'].includes(trimmedMsg)) {
+    return 'secret';
+  }
+
+  // Vérifier les codes secrets
   const secretCodes = [
     'ADMIN12301012000',
-    '00000000',
-    '11111111',
-    '22222222',
-    'JESUISMEMBRE66',
+    'JESUISTRESORIER444',
+    'SECRETAIRE000',
+    'PRESIDENT000',
     '33333333',
     '44444444',
     '55555555',
@@ -503,8 +483,19 @@ document.querySelector('#add-member-form')?.addEventListener('submit', async (e)
 });
 
 async function generateMemberCode() {
-  const members = await loadData('members');
-  return `${(members.length + 1).toString().padStart(3, '0')}`;
+  try {
+    const members = await loadData('members');
+    const usedCodes = members.map(m => parseInt(m.code, 10)).filter(code => !isNaN(code)).sort((a, b) => a - b);
+    let newCode = 1;
+    for (let i = 0; i < usedCodes.length; i++) {
+      if (usedCodes[i] !== newCode) break;
+      newCode++;
+    }
+    return `${newCode.toString().padStart(3, '0')}`;
+  } catch (error) {
+    console.error('Erreur generateMemberCode:', error);
+    return `${(Math.floor(Math.random() * 1000) + 1).toString().padStart(3, '0')}`;
+  }
 }
 
 
@@ -537,7 +528,6 @@ async function updateMembersList() {
     list.innerHTML = members
       .map(m => `
         <div class="member-card">
-          <img src="https://picsum.photos/150" alt="${m.firstname} ${m.lastname}" class="member-photo" onerror="this.src='assets/images/placeholder.jpg'">
           <div>
             <p><strong>${m.firstname} ${m.lastname}</strong></p>
             <p><small>${m.code} • ${m.role}</small></p>
@@ -575,13 +565,12 @@ async function updateEditMembersList() {
     list.innerHTML = filteredMembers
       .map(m => `
         <div class="member-card">
-          <img src="https://via.placeholder.com/150" alt="${m.firstname} ${m.lastname}" class="member-photo">
           <div>
             <p><strong>${m.firstname} ${m.lastname}</strong></p>
             <p><small>${m.code} • ${m.role}</small></p>
           </div>
           <div class="member-actions">
-            <button class="cta-button small" onclick="editMember('${m.id}')">Modifier</button>
+            <button class="cta-button small" onclick="editMember('${m.code}')">Modifier</button>
             <button class="cta-button small danger" onclick="deleteMember('${m.id}', '${m.firstname} ${m.lastname}')">Supprimer</button>
           </div>
         </div>
@@ -608,7 +597,7 @@ async function editMember(code) {
     const form = document.querySelector('#add-member-form');
     if (!form) return;
 
-    form.dataset.editing = member.id;
+    form.dataset.editing = member.id; // On garde l'ID pour la sauvegarde dans Firestore
     document.getElementById('new-member-firstname').value = member.firstname || '';
     document.getElementById('new-member-lastname').value = member.lastname || '';
     document.getElementById('new-member-age').value = member.age || '';
@@ -642,21 +631,17 @@ async function deleteMember(memberId, memberName) {
       return;
     }
 
-    // Cacher la liste et le formulaire d'ajout, afficher le formulaire de suppression
     membersList.style.display = 'none';
     if (addForm) addForm.style.display = 'none';
     deleteForm.style.display = 'block';
-    document.querySelector('#delete-member-code').value = ''; // Réinitialiser le champ
+    document.querySelector('#delete-member-code').value = '';
 
-    // Mettre à jour le titre pour indiquer quel membre est supprimé
     const title = document.querySelector('#admin-members h3');
     if (title) title.textContent = `Supprimer ${memberName}`;
 
-    // Nettoyer les écouteurs précédents pour éviter les duplications
     const newForm = deleteForm.cloneNode(true);
     deleteForm.parentNode.replaceChild(newForm, deleteForm);
 
-    // Ajouter un nouvel écouteur pour la soumission
     newForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       await confirmDeleteMember(memberId, memberName);
@@ -693,7 +678,6 @@ async function confirmDeleteMember(memberId, memberName) {
     console.log('Membre supprimé:', memberName);
     alert('Membre supprimé avec succès');
 
-    // Réinitialiser l'affichage
     const membersList = document.querySelector('#edit-members-list');
     const addForm = document.querySelector('#add-member-form');
     const deleteForm = document.querySelector('#delete-member-form');
@@ -707,7 +691,6 @@ async function confirmDeleteMember(memberId, memberName) {
     alert('Erreur lors de la suppression du membre');
   }
 }
-
 
 async function updateAllMemberLists() {
   await Promise.all([
@@ -733,32 +716,27 @@ async function showMemberDetail(code) {
       personalLogin.style.display = 'none';
       personalContent.style.display = 'block';
       document.querySelector('#personal-title').textContent = `Espace de ${member.firstname} ${member.lastname}`;
+      document.querySelector('#personal-role').textContent = `Rôle: ${member.role}`; // Ajout du rôle
       document.querySelector('#personal-info').innerHTML = `
         <p><strong>Code:</strong> ${member.code}</p>
         <p><strong>Nom:</strong> ${member.firstname} ${member.lastname}</p>
-        <p><strong>Rôle:</strong> ${member.role}</p>
         <p><strong>Statut:</strong> ${member.status}</p>
         ${member.email ? `<p><strong>Email:</strong> ${member.email}</p>` : ''}
         ${member.phone ? `<p><strong>Téléphone:</strong> ${member.phone}</p>` : ''}
       `;
       const contributions = await loadData('contributions');
-      document.querySelector('#personal-contributions').innerHTML = `
-        <p><strong>Cotisations Mensuelles:</strong></p>
-        ${Object.entries(member.contributions.Mensuelle).map(([year, paidMonths]) => `
-          <p>${year}: ${paidMonths.map((paid, i) => `${paid ? '✅' : '❌'} ${months[i]}`).join(', ')}</p>
-        `).join('')}
-        <p><strong>Cotisations Globales:</strong></p>
-        ${contributions.map(c => `
-          <p>${c.name} (${c.amount} FCFA): ${member.contributions.globalContributions?.[c.name]?.paid ? '✅ Payé' : '❌ Non payé'}</p>
-        `).join('') || '<p>Aucune cotisation globale</p>'}
-      `;
+      document.querySelector('#cotisations-content').innerHTML = Object.entries(member.contributions.Mensuelle).map(([year, paidMonths]) => `
+        <p>${year}: ${paidMonths.map((paid, i) => `${paid ? '✅' : '❌'} ${months[i]}`).join(', ')}</p>
+      `).join('');
+      document.querySelector('#global-cotisations-content').innerHTML = contributions.map(c => `
+        <p>${c.name} (${c.amount} FCFA): ${member.contributions.globalContributions?.[c.name]?.paid ? '✅ Payé' : '❌ Non payé'}</p>
+      `).join('') || '<p>Aucune cotisation globale</p>';
     }
   } catch (error) {
     console.error('Erreur showMemberDetail:', error);
     alert('Erreur lors de l\'affichage des détails du membre');
   }
 }
-
 
 // ==================== FONCTIONS GAL ====================
 async function setPresidentCodes(event) {
@@ -803,51 +781,73 @@ document.addEventListener('DOMContentLoaded', () => {
 
 document.querySelector('#add-event-form')?.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const fileInput = document.querySelector('#event-file');
-  const file = fileInput?.files[0];
-  const eventDate = document.querySelector('#event-date').value;
-  const eventTime = document.querySelector('#event-time').value;
-
-  const eventData = {
-    name: document.querySelector('#event-name').value.trim(),
-    description: document.querySelector('#event-description').value.trim(),
-    datetime: new Date(`${eventDate}T${eventTime}`).toISOString(),
-    createdAt: new Date().toISOString()
-  };
-
   try {
+    console.log('Soumission add-event-form à', new Date().toISOString());
+    const name = document.querySelector('#event-name')?.value.trim();
+    const dateInput = document.querySelector('#event-date')?.value;
+    const timeInput = document.querySelector('#event-time')?.value;
+    const description = document.querySelector('#event-description')?.value.trim();
+
+    // Vérification de base des champs
+    if (!name || !dateInput || !timeInput || !description) {
+      console.error('Champs manquants:', { name, dateInput, timeInput, description });
+      alert('Veuillez remplir tous les champs');
+      return;
+    }
+
+    console.log('Valeurs brutes:', { dateInput, timeInput });
+
+    // Création de la date (format attendu : YYYY-MM-DD et HH:mm)
+    const eventDate = new Date(`${dateInput}T${timeInput}:00`);
+    console.log('Date construite:', eventDate, 'ISO:', eventDate.toISOString());
+
+    if (isNaN(eventDate.getTime())) {
+      console.error('Date invalide:', { dateInput, timeInput });
+      alert('Erreur : La date ou l\'heure saisie est invalide (ex. : 2025-07-23, 14:00).');
+      return;
+    }
+
+    // Vérification simple que la date est future
+    const now = new Date();
+    if (eventDate <= now) {
+      console.error('Date dans le passé:', eventDate);
+      alert('L\'événement doit être prévu à une date future');
+      return;
+    }
+
+    const eventData = {
+      name,
+      date: eventDate.toISOString(),
+      description,
+    };
+
+    console.log('Données de l\'événement à enregistrer:', eventData);
     await saveData('events', eventData);
     document.querySelector('#add-event-form').reset();
-    await updateEventsList();
     await updateEventsAdminList();
+    await updateEventCountdowns();
+    console.log('Événement ajouté:', name, eventDate);
     alert('Événement ajouté avec succès');
   } catch (error) {
-    console.error('Erreur addEvent:', error);
-    alert('Erreur lors de l\'ajout de l\'événement');
+    console.error('Erreur add-event-form:', error);
+    alert('Erreur lors de l’ajout de l’événement : ' + error.message);
   }
 });
 
 async function updateEventsList() {
   try {
     const events = await loadData('events');
-    const search = document.querySelector('#events-search')?.value.toLowerCase() || '';
     const list = document.querySelector('#events-list');
-    if (!list) return;
-
-    list.innerHTML = events
-      .filter(e => e.name.toLowerCase().includes(search) || e.description.toLowerCase().includes(search))
-      .map(e => `
-        <div class="event-card">
-          ${e.image ? `<img src="${e.image}" alt="${e.name}" class="event-image">` : ''}
-          <div class="event-details">
-            <h4>${e.name}</h4>
-            <p>${e.description}</p>
-            <p class="event-date">${formatDate(e.datetime)}</p>
-          </div>
-        </div>
-      `).join('');
+    
+    list.innerHTML = events.map(event => `
+      <div class="event-card">
+        <h4>${event.name}</h4>
+        <p>${event.description}</p>
+        <p class="event-date">${formatEventDate(event.date)}</p>
+      </div>
+    `).join('') || '<p>Aucun événement disponible</p>';
   } catch (error) {
-    console.error('Erreur updateEventsList:', error);
+    console.error('Error updating events:', error);
   }
 }
 
@@ -886,6 +886,89 @@ async function deleteEvent(id) {
   }
 }
 
+let countdownInterval = null;
+
+async function updateEventCountdowns() {
+  try {
+    console.log('Début updateEventCountdowns à', new Date().toISOString());
+    const countdownContainer = document.querySelector('#event-countdowns');
+    if (!countdownContainer) {
+      console.error('Élément #event-countdowns introuvable dans le DOM');
+      alert('Erreur : Conteneur des comptes à rebours introuvable');
+      return;
+    }
+
+    const events = await loadData('events');
+    console.log('Événements récupérés:', events);
+
+    if (countdownInterval) {
+      clearInterval(countdownInterval);
+      console.log('Intervalle précédent arrêté');
+    }
+
+    const now = new Date();
+    const futureEvents = events
+      .filter(e => {
+        const eventDate = new Date(e.date);
+        if (isNaN(eventDate.getTime())) {
+          console.warn('Date invalide pour l\'événement:', e);
+          return false;
+        }
+        return eventDate > now;
+      })
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    console.log('Événements futurs:', futureEvents);
+
+    if (futureEvents.length === 0) {
+      countdownContainer.innerHTML = '<p class="event-countdown">Aucun événement à venir</p>';
+      console.log('Aucun événement futur trouvé');
+      return;
+    }
+
+    const updateCountdowns = () => {
+      const now = new Date();
+      let html = '';
+
+      futureEvents.forEach(event => {
+        const eventTime = new Date(event.date);
+        if (isNaN(eventTime.getTime())) {
+          console.warn('Date invalide dans updateCountdowns:', event);
+          html += `<p class="event-countdown">${event.name} - Date invalide</p>`;
+          return;
+        }
+
+        const timeDiff = eventTime - now;
+
+        if (timeDiff <= 0 || timeDiff <= 2 * 60 * 1000) { // Moins de 2 minutes
+          html += `<p class="event-countdown">${event.name} EN COURS...</p>`;
+          console.log('Événement en cours ou trop proche:', event.name);
+          return;
+        }
+
+        const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
+
+        html += `
+          <p class="event-countdown">${event.name} - ${days} JOURS ${hours}H ${minutes}MN ${seconds}S</p>
+        `;
+      });
+
+      countdownContainer.innerHTML = html || '<p class="event-countdown">Aucun événement à venir</p>';
+      console.log('Comptes à rebours mis à jour:', futureEvents.length, 'événements');
+    };
+
+    updateCountdowns();
+    countdownInterval = setInterval(updateCountdowns, 1000);
+    console.log('Comptes à rebours démarrés pour:', futureEvents.length, 'événements');
+  } catch (error) {
+    console.error('Erreur updateEventCountdowns:', error);
+    countdownContainer.innerHTML = '<p class="event-countdown">Erreur lors du chargement des événements</p>';
+  }
+}
+
 // ==================== FONCTIONS MESSAGES ====================
 
 document.querySelector('#add-message-form')?.addEventListener('submit', async (e) => {
@@ -912,19 +995,34 @@ document.querySelector('#add-message-form')?.addEventListener('submit', async (e
 
 async function updateMessagesList() {
   try {
+    console.log('Début updateMessagesList');
     const messages = await loadData('messages');
+    console.log('Messages récupérés:', messages);
     const list = document.querySelector('#messages-list');
-    if (!list) return;
+    if (!list) {
+      console.error('Élément #messages-list introuvable');
+      return;
+    }
 
-    list.innerHTML = messages.map(msg => `
+    // Trier les messages par date en ordre décroissant (nouveaux en haut)
+    const sortedMessages = messages.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    list.innerHTML = sortedMessages.map(msg => `
       <div class="message-card">
-        <h4>${msg.title}</h4>
-        <p>${msg.text}</p>
-        <p class="message-date">${formatDate(msg.date)}</p>
+        <div class="title">
+          <img src="assets/images/logo.png" alt="Logo">
+          ${msg.title}
+        </div>
+        <div class="message">${msg.text}</div>
+        <div class="separator"></div>
+        <div class="date">${formatDate(msg.date)}</div>
       </div>
-    `).join('');
+    `).join('') || '<p>Aucun message disponible</p>';
+
+    console.log('Liste des messages mise à jour');
   } catch (error) {
     console.error('Erreur updateMessagesList:', error);
+    alert('Erreur lors du chargement des messages');
   }
 }
 
@@ -1175,10 +1273,16 @@ document.querySelector('#suggestion-form')?.addEventListener('submit', async (e)
 
 async function updateSuggestionsList() {
   try {
+    console.log('Début updateSuggestionsList');
     const suggestions = await loadData('suggestions');
+    console.log('Suggestions récupérées:', suggestions);
     const search = document.querySelector('#suggestions-search')?.value.toLowerCase() || '';
     const list = document.querySelector('#suggestions-list');
-    if (!list) return;
+    if (!list) {
+      console.error('Élément #suggestions-list introuvable');
+      alert('Erreur : conteneur des suggestions introuvable');
+      return;
+    }
 
     list.innerHTML = suggestions
       .filter(s => s.text.toLowerCase().includes(search) || s.memberCode.toLowerCase().includes(search))
@@ -1186,10 +1290,32 @@ async function updateSuggestionsList() {
         <div class="suggestion-card">
           <p><strong>${s.memberCode}</strong>: ${s.text}</p>
           <p class="suggestion-date">${formatDate(s.createdAt)}</p>
+          <button class="cta-button danger small" onclick="deleteSuggestion('${s.id}')">Supprimer</button>
         </div>
       `).join('') || '<p>Aucune suggestion disponible</p>';
+
+    console.log('Liste des suggestions mise à jour');
   } catch (error) {
     console.error('Erreur updateSuggestionsList:', error);
+    alert('Erreur lors du chargement des suggestions');
+  }
+}
+
+async function deleteSuggestion(suggestionId) {
+  console.log('deleteSuggestion appelé avec ID:', suggestionId);
+  try {
+    if (!confirm('Voulez-vous vraiment supprimer cette suggestion ?')) {
+      console.log('Suppression annulée par l\'utilisateur');
+      return;
+    }
+
+    await deleteData('suggestions', suggestionId);
+    await updateSuggestionsList();
+    console.log('Suggestion supprimée:', suggestionId);
+    alert('Suggestion supprimée avec succès');
+  } catch (error) {
+    console.error('Erreur deleteSuggestion:', error);
+    alert('Erreur lors de la suppression de la suggestion : ' + error.message);
   }
 }
 
@@ -1419,6 +1545,7 @@ function goBackToTreasurerGlobal() {
   console.log('Retour à treasurer-global'); // Journal
   showPage('treasurer-global');
 }
+
 async function updateTreasurerMonthlyList() {
   try {
     const members = await loadData('members');
@@ -1439,8 +1566,7 @@ async function updateTreasurerMonthlyList() {
 
     list.innerHTML = filteredMembers
       .map(m => `
-<div class="member-card" onclick="manageMemberMonthlyContributions('${m.code}')">
-          <img src="https://via.placeholder.com/150" alt="${m.firstname} ${m.lastname}" class="member-photo">
+        <div class="member-card" onclick="manageMemberMonthlyContributions('${m.code}')">
           <div>
             <p><strong>${m.firstname} ${m.lastname}</strong></p>
             <p><small>${m.code} • ${m.role}</small></p>
@@ -1628,27 +1754,56 @@ document.querySelector('#add-secretary-file-form')?.addEventListener('submit', a
 // Mettre à jour la liste des fichiers secrétaire
 async function updateSecretaryFilesList() {
   try {
+    // Charger à la fois les fichiers et les livres
     const files = await loadData('secretaryFiles');
+    const books = await loadData('books');
     const search = document.querySelector('#secretary-files-search')?.value.toLowerCase() || '';
     const list = document.querySelector('#secretary-files-list');
-    if (!list) {
-      console.error('Élément #secretary-files-list introuvable');
-      return;
-    }
+    
+    if (!list) return;
 
-    list.innerHTML = files
-      .filter(f => f.name.toLowerCase().includes(search) || f.category.toLowerCase().includes(search) || f.url.toLowerCase().includes(search))
-      .map(f => `
+    // Afficher les fichiers et livres ensemble
+    list.innerHTML = [
+      ...files.map(f => `
         <div class="file-card">
           <p><strong>${f.category}</strong>: ${f.name}</p>
           <p><a href="${f.url}" target="_blank">${f.url}</a></p>
           <p class="file-date">${formatDate(f.createdAt)}</p>
           <button class="cta-button danger" onclick="deleteSecretaryFile('${f.id}')">Supprimer</button>
         </div>
-      `).join('') || '<p>Aucun fichier disponible</p>';
+      `),
+      ...books.map(b => `
+        <div class="file-card">
+          <p><strong>Livre: ${b.title}</strong> (${b.category})</p>
+          <p>Couverture: <a href="${b.coverUrl}" target="_blank">Lien</a></p>
+          <p>PDF: <a href="${b.pdfUrl}" target="_blank">Télécharger</a></p>
+          <p class="file-date">${formatDate(b.createdAt)}</p>
+          <button class="cta-button danger" onclick="deleteLibraryBook('${b.id}')">Supprimer</button>
+        </div>
+      `)
+    ].join('') || '<p>Aucun fichier ou livre disponible</p>';
   } catch (error) {
     console.error('Erreur updateSecretaryFilesList:', error);
-    alert('Erreur lors du chargement des fichiers');
+  }
+}
+
+async function deleteLibraryBook(bookId) {
+  if (!confirm('Voulez-vous vraiment supprimer ce livre ? Cette action est irréversible.')) {
+    return;
+  }
+
+  try {
+    // Supprimer le livre de la collection 'books'
+    await deleteData('books', bookId);
+    
+    // Mettre à jour les deux listes
+    await updateSecretaryFilesList();
+    await updateLibraryContent();
+    
+    alert('Livre supprimé avec succès !');
+  } catch (error) {
+    console.error('Erreur deleteLibraryBook:', error);
+    alert('Erreur lors de la suppression du livre');
   }
 }
 
@@ -1688,116 +1843,221 @@ async function updateHomeGallery() {
   }
 }
 
+
+// Ajouter un livre à la bibliothèque
+// Ajouter un livre à la bibliothèque
+document.querySelector('#add-library-book-form')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const bookData = {
+    title: document.querySelector('#book-title').value.trim(),
+    category: document.querySelector('#book-category').value.trim(),
+    coverUrl: document.querySelector('#book-cover-url').value.trim(),
+    pdfUrl: document.querySelector('#book-pdf-url').value.trim(),
+    createdAt: new Date().toISOString()
+  };
+
+  try {
+    // Validation de l'URL de couverture
+    if (!bookData.coverUrl.match(/\.(jpeg|jpg|png|gif)$/i)) {
+      throw new Error('Lien de couverture invalide. Utilisez un lien vers une image (jpg, png, gif).');
+    }
+    
+    // Nouvelle validation améliorée pour les PDF
+    if (!isValidPdfUrl(bookData.pdfUrl)) {
+      throw new Error('Lien PDF invalide. Utilisez un lien direct .pdf ou un lien Google Drive valide');
+    }
+
+    // Convertir les liens Google Drive en liens de téléchargement direct
+    bookData.pdfUrl = convertToDirectDownloadLink(bookData.pdfUrl);
+
+    await saveData('books', bookData);
+    document.querySelector('#add-library-book-form').reset();
+    await updateLibraryContent();
+    alert('Livre ajouté avec succès!');
+  } catch (error) {
+    console.error('Erreur addLibraryBook:', error);
+    alert('Erreur: ' + error.message);
+  }
+});
+
+// Fonction de validation des URLs PDF
+function isValidPdfUrl(url) {
+  // Accepte :
+  // - Les liens se terminant par .pdf
+  // - Les liens Google Drive
+  // - Les liens Dropbox
+  const validPatterns = [
+    /\.pdf$/i, // Termine par .pdf
+    /drive\.google\.com\/file\/d\//i, // Lien Google Drive standard
+    /drive\.google\.com\/uc\?export=download/i, // Lien Google Drive direct
+    /dropbox\.com\/s\//i // Lien Dropbox
+  ];
+  
+  return validPatterns.some(pattern => pattern.test(url));
+}
+
+// Fonction pour convertir les liens Google Drive en liens de téléchargement direct
+function convertToDirectDownloadLink(url) {
+  // Si c'est déjà un lien direct, ne rien faire
+  if (url.includes('uc?export=download')) return url;
+  
+  // Conversion des liens Google Drive standard
+  if (url.includes('drive.google.com/file/d/')) {
+    const fileId = url.match(/\/file\/d\/([^\/]+)/)?.[1];
+    if (fileId) {
+      return `https://drive.google.com/uc?export=download&id=${fileId}`;
+    }
+  }
+  
+  return url; // Retourne l'URL originale si aucune conversion n'est possible
+}
+
+
 // ==================== FONCTIONS STATISTIQUES ====================
 
 async function updateStats() {
   try {
+    console.log('Début updateStats à', new Date().toISOString());
+    const members = await loadData('members');
+    console.log('Membres chargés:', members);
+    const contributions = await loadData('contributions');
+    console.log('Cotisations chargées:', contributions);
+
+    // Remplir le sélecteur des cotisations globales
+    const globalSelect = document.querySelector('#global-contribution');
+    if (globalSelect) {
+      globalSelect.innerHTML = contributions
+        .map(c => `<option value="${c.name}">${c.name} (${c.amount} FCFA)</option>`)
+        .join('') || '<option value="">Aucune cotisation globale</option>';
+    } else {
+      console.warn('Sélecteur #global-contribution introuvable');
+    }
+
+    // Gérer le changement de type de cotisation
+    const statsTypeSelect = document.querySelector('#stats-type');
+    if (statsTypeSelect) {
+      statsTypeSelect.addEventListener('change', () => {
+        const monthlySelection = document.querySelector('#monthly-selection');
+        const globalSelection = document.querySelector('#global-selection');
+        if (monthlySelection && globalSelection) {
+          monthlySelection.style.display = statsTypeSelect.value === 'monthly' ? 'block' : 'none';
+          globalSelection.style.display = statsTypeSelect.value === 'global' ? 'block' : 'none';
+          // Afficher un graphique par défaut lors du changement
+          renderStatsChart('bar');
+        }
+      });
+    } else {
+      console.warn('Sélecteur #stats-type introuvable');
+    }
+
+    // Ajouter des écouteurs pour les changements de mois et d'année
+    const statsMonth = document.querySelector('#stats-month');
+    const statsYear = document.querySelector('#stats-year');
+    const globalContribution = document.querySelector('#global-contribution');
+
+    if (statsMonth) statsMonth.addEventListener('change', () => renderStatsChart('bar'));
+    if (statsYear) statsYear.addEventListener('change', () => renderStatsChart('bar'));
+    if (globalContribution) globalContribution.addEventListener('change', () => renderStatsChart('bar'));
+
+    // Afficher un graphique par défaut
+    renderStatsChart('bar');
+} catch (error) {
+    console.error('Erreur updateStats:', error.message, error.stack);
+    alert('Erreur lors du chargement des statistiques : ' + error.message);
+  }
+}
+
+// Fonction pour afficher les graphiques statistiques
+async function renderStatsChart(chartType) {
+  try {
+    console.log('Début renderStatsChart avec type:', chartType);
+    
+    // Récupérer les données nécessaires
     const members = await loadData('members');
     const contributions = await loadData('contributions');
     
-    const totalAmount = members.reduce((sum, m) => {
-      return sum + Object.entries(m.contributions).reduce((s, [name, years]) => {
-        return s + Object.values(years).reduce((t, months) => {
-          return t + months.filter(Boolean).length * (contributions.find(c => c.name === name)?.amount || 2000);
-        }, 0);
-      }, 0);
-    }, 0);
+    // Récupérer les sélections
+    const statsType = document.querySelector('#stats-type').value;
+    const ctx = document.getElementById('stats-chart').getContext('2d');
+    
+    // Détruire le graphique précédent s'il existe
+    if (window.statsChart) {
+      window.statsChart.destroy();
+    }
 
-    const memberCount = members.length;
-    const statusCounts = members.reduce((acc, m) => {
-      acc[m.status] = (acc[m.status] || 0) + 1;
-      return acc;
-    }, {});
+    // Préparer les données selon le type de statistique
+    let chartData;
+    if (statsType === 'monthly') {
+      // Statistiques mensuelles
+      const month = parseInt(document.querySelector('#stats-month').value);
+      const year = document.querySelector('#stats-year').value;
+      
+      const paidCount = members.filter(m => 
+        m.contributions?.Mensuelle?.[year]?.[month]
+      ).length;
+      
+      const unpaidCount = members.length - paidCount;
+      
+      chartData = {
+        labels: ['Payé', 'Non payé'],
+        datasets: [{
+          label: `Cotisations ${months[month]} ${year}`,
+          data: [paidCount, unpaidCount],
+          backgroundColor: ['#4CAF50', '#F44336']
+        }]
+      };
+    } else {
+      // Statistiques globales
+      const contributionName = document.querySelector('#global-contribution').value;
+      const contribution = contributions.find(c => c.name === contributionName);
+      
+      if (!contribution) {
+        console.error('Cotisation globale non trouvée');
+        return;
+      }
+      
+      const paidCount = members.filter(m => 
+        m.contributions?.globalContributions?.[contributionName]?.paid
+      ).length;
+      
+      const unpaidCount = members.length - paidCount;
+      
+      chartData = {
+        labels: ['Payé', 'Non payé'],
+        datasets: [{
+          label: `Cotisation ${contributionName}`,
+          data: [paidCount, unpaidCount],
+          backgroundColor: ['#4CAF50', '#F44336']
+        }]
+      };
+    }
 
-    const ctxTotal = document.getElementById('stats-total-amount')?.getContext('2d');
-    if (ctxTotal) {
-      ```chartjs
-      {
-        type: 'bar',
-        data: {
-          labels: ['Montant Total'],
-          datasets: [{
-            label: 'Montant des Cotisations (FCFA)',
-            data: [totalAmount],
-            backgroundColor: '#4CAF50',
-            borderColor: '#388E3C',
-            borderWidth: 1
-          }]
-        },
-        options: {
-          scales: {
-            y: { beginAtZero: true }
+    // Créer le graphique selon le type demandé
+    window.statsChart = new Chart(ctx, {
+      type: chartType,
+      data: chartData,
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'top',
+          },
+          title: {
+            display: true,
+            text: 'Statistiques des Cotisations'
           }
         }
       }
-      ```
-    }
-
-    const ctxMembers = document.getElementById('stats-members')?.getContext('2d');
-    if (ctxMembers) {
-      ```chartjs
-      {
-        type: 'pie',
-        data: {
-          labels: ['Membres'],
-          datasets: [{
-            label: 'Nombre de Membres',
-            data: [memberCount],
-            backgroundColor: ['#2196F3'],
-            borderColor: ['#1976D2'],
-            borderWidth: 1
-          }]
-        }
-      }
-      ```
-    }
-
-    const ctxStatus = document.getElementById('stats-status')?.getContext('2d');
-    if (ctxStatus) {
-      ```chartjs
-      {
-        type: 'pie',
-        data: {
-          labels: Object.keys(statusCounts),
-          datasets: [{
-            label: 'Statut des Membres',
-            data: Object.values(statusCounts),
-            backgroundColor: ['#4CAF50', '#F44336', '#FFC107'],
-            borderColor: ['#388E3C', '#D32F2F', '#FFA000'],
-            borderWidth: 1
-          }]
-        }
-      }
-      ```
-    }
-
-    const ctxContributions = document.getElementById('stats-contributions')?.getContext('2d');
-    if (ctxContributions) {
-      ```chartjs
-      {
-        type: 'bar',
-        data: {
-          labels: contributions.map(c => c.name),
-          datasets: [{
-            label: 'Montant des Cotisations',
-            data: contributions.map(c => c.amount),
-            backgroundColor: '#FF9800',
-            borderColor: '#F57C00',
-            borderWidth: 1
-          }]
-        },
-        options: {
-          scales: {
-            y: { beginAtZero: true }
-          }
-        }
-      }
-      ```
-    }
+    });
+    
+    console.log('Graphique généré avec succès');
   } catch (error) {
-    console.error('Erreur updateStats:', error);
+    console.error('Erreur dans renderStatsChart:', error);
+    alert('Erreur lors de la génération du graphique: ' + error.message);
   }
 }
+
 
 // ==================== FONCTIONS ESPACE PERSONNEL ====================
 
@@ -1844,7 +2104,11 @@ function logoutPersonal() {
 }
 
 function payViaWave() {
-  alert('Paiement via Wave non implémenté. Redirigez vers l\'application Wave.');
+  // Ouvrir le lien Wave dans un nouvel onglet
+  window.open('https://pay.wave.com/m/M_sn_dyIw8DZWV46K/c/sn/', '_blank');
+  
+  // Alternative : rediriger dans la même fenêtre
+  // window.location.href = 'https://pay.wave.com/m/M_sn_dyIw8DZWV46K/c/sn/';
 }
 
 function payViaOrangeMoney() {
@@ -1876,20 +2140,44 @@ async function updateLibraryContent() {
     const books = await loadData('books');
     const search = document.querySelector('#library-search')?.value.toLowerCase() || '';
     const content = document.querySelector('#library-content');
+    
     if (!content) return;
 
     content.innerHTML = books
-      .filter(b => b.title?.toLowerCase().includes(search) || b.category?.toLowerCase().includes(search))
+      .filter(b => 
+        b.title?.toLowerCase().includes(search) || 
+        b.category?.toLowerCase().includes(search)
+      )
       .map(b => `
         <div class="book-item">
-          <h4>${b.title || 'Sans titre'}</h4>
-          <p>Catégorie: ${b.category || 'Non spécifié'}</p>
-          ${b.url ? `<a href="${b.url}" target="_blank">Télécharger</a>` : ''}
+          <div class="book-cover" onclick="downloadPDF('${b.pdfUrl}', '${b.title.replace(/'/g, "\\'")}')">
+            <img src="${b.coverUrl}" alt="${b.title}">
+          </div>
+          <div class="book-info">
+            <h4>${b.title || 'Sans titre'}</h4>
+            <p>Catégorie: ${b.category || 'Non spécifié'}</p>
+            ${currentUser?.role === 'secretaire' ? `
+              <button class="cta-button danger small" onclick="deleteLibraryBook('${b.id}')">
+                Supprimer
+              </button>
+            ` : ''}
+          </div>
         </div>
       `).join('') || '<p>Aucun livre disponible</p>';
   } catch (error) {
     console.error('Erreur updateLibraryContent:', error);
   }
+}
+
+// Télécharger le PDF
+function downloadPDF(pdfUrl, fileName) {
+  const link = document.createElement('a');
+  link.href = pdfUrl;
+  link.download = fileName || 'document';
+  link.target = '_blank';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 // ==================== FONCTIONS MESSAGES POPUPS ====================
@@ -1985,4 +2273,173 @@ function goBackToTreasurerMonthly() {
 function goBackToTreasurer() {
   console.log('Retour à treasurer'); // Journal pour débogage
   showPage('treasurer');
+}
+
+function formatEventDate(dateString) {
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) throw new Error('Invalid date');
+    
+    return date.toLocaleDateString('fr-FR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return 'Date à confirmer'; // Message de repli
+  }
+}
+
+// Charger les codes d'accès
+async function loadAccessCodes() {
+  try {
+    const doc = await db.collection('securitySettings').doc('accessCodes').get();
+    if (!doc.exists) {
+      // Si le document n'existe pas, initialisez-le avec des valeurs par défaut
+      await initializeDefaultCodes();
+      return {
+        secretAccessCode: 'ADMIN123',
+        treasurerAccessCode: 'TRESORIER66',
+        secretaryAccessCode: 'SECRETAIRE33',
+        presidentAccessCode: 'PRESIDENT000'
+      };
+    }
+    return doc.data();
+  } catch (error) {
+    console.error('Erreur loadAccessCodes:', error);
+    return null;
+  }
+}
+
+// Sauvegarder un code individuel
+async function saveSingleCode(inputId, codeType) {
+  try {
+    const codeValue = document.getElementById(inputId).value.trim();
+    if (!codeValue) {
+      alert('Veuillez entrer un code valide');
+      return;
+    }
+
+    const currentCodes = await loadAccessCodes();
+    await db.collection('securitySettings').doc('accessCodes').set({
+      ...currentCodes,
+      [codeType]: codeValue
+    }, { merge: true });
+
+    alert('Code mis à jour avec succès!');
+  } catch (error) {
+    console.error('Erreur saveSingleCode:', error);
+    alert('Erreur lors de la mise à jour du code');
+  }
+}
+
+// Initialiser les champs de code
+async function initCodeFields() {
+  if (currentUser?.role !== 'president') return;
+
+  try {
+    const codes = await loadAccessCodes();
+    document.getElementById('secret-access-code').value = codes.secretAccessCode || '';
+    document.getElementById('treasurer-access-code').value = codes.treasurerAccessCode || '';
+    document.getElementById('secretary-access-code').value = codes.secretaryAccessCode || '';
+  } catch (error) {
+    console.error('Erreur initCodeFields:', error);
+  }
+}
+
+// Modifier la fonction checkSecretPassword
+async function checkSecretPassword() {
+  try {
+    const password = document.querySelector('#secret-password')?.value.trim().toUpperCase();
+    if (!password) {
+      appendChatMessage('Assistant ANSAR', 'Veuillez entrer un code valide.');
+      return;
+    }
+
+    // Charger les codes depuis Firestore
+    const accessCodes = await loadAccessCodes();
+    
+    // Vérifier chaque code
+    if (password === accessCodes.presidentAccessCode || password === 'PRESIDENT000') {
+      currentUser = { role: 'president' };
+      showPage('president');
+      clearChatHistory();
+    }
+    else if (password === accessCodes.secretAccessCode || password === 'ADMIN12301012000') {
+      currentUser = { role: 'admin' };
+      showPage('secret');
+      clearChatHistory();
+    } 
+    else if (password === accessCodes.treasurerAccessCode || password === 'JESUISTRESORIER444') {
+      currentUser = { role: 'tresorier' };
+      showPage('treasurer');
+      clearChatHistory();
+    }
+    else if (password === accessCodes.secretaryAccessCode || password === 'SECRETAIRE000') {
+      currentUser = { role: 'secretaire' };
+      showPage('secretary');
+      clearChatHistory();
+    }
+    else {
+      appendChatMessage('Assistant ANSAR', 'Code incorrect. Accès refusé.');
+    }
+  } catch (error) {
+    console.error('Erreur checkSecretPassword:', error);
+    appendChatMessage('Assistant ANSAR', 'Erreur système. Réessayez plus tard.');
+  }
+}
+
+async function initializeDefaultCodes() {
+  try {
+    await db.collection('securitySettings').doc('accessCodes').set({
+      secretAccessCode: 'ADMIN12301012000',  // Pour l'espace admin
+      treasurerAccessCode: 'JESUISTRESORIER444', // Pour l'espace trésorier
+      secretaryAccessCode: 'SECRETAIRE000',  // Pour l'espace secrétaire
+      presidentAccessCode: 'PRESIDENT000'    // Pour l'espace président
+    });
+    console.log("Codes d'accès initialisés avec succès");
+  } catch (error) {
+    console.error("Erreur lors de l'initialisation des codes:", error);
+  }
+}
+
+
+// À exécuter une seule fois dans la console :
+// initializeDefaultCodes();
+
+// À exécuter une seule fois dans la console :
+// initializeDefaultCodes();
+// Appeler cette fonction une seule fois depuis la console :
+// initializeDefaultCodes();
+
+async function updateCode(codeType) {
+  try {
+    const inputId = `${codeType.replace('AccessCode', '-code-input')}`;
+    const newCode = document.getElementById(inputId).value.trim();
+    
+    if (!newCode || newCode.length < 6) {
+      alert('Le code doit contenir au moins 6 caractères');
+      return;
+    }
+
+    await db.collection('securitySettings').doc('accessCodes').set({
+      [codeType]: newCode
+    }, { merge: true });
+
+    alert('Code mis à jour avec succès!');
+    
+    // Recharger les codes
+    const codes = await loadAccessCodes();
+    document.getElementById('president-code-input').value = codes.presidentAccessCode || '';
+    document.getElementById('admin-code-input').value = codes.secretAccessCode || '';
+    document.getElementById('treasurer-code-input').value = codes.treasurerAccessCode || '';
+    document.getElementById('secretary-code-input').value = codes.secretaryAccessCode || '';
+  } catch (error) {
+    console.error('Erreur updateCode:', error);
+    alert('Erreur lors de la mise à jour du code');
+  }
 }
